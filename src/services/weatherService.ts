@@ -1,4 +1,6 @@
 // Weather service for MadSnowi winter route planning
+import { supabase } from '@/integrations/supabase/client';
+
 interface WeatherData {
   name: string;
   main: {
@@ -23,9 +25,15 @@ interface RouteSegment {
   safetyScore: 'safe' | 'caution' | 'danger';
 }
 
+interface RouteData {
+  distance: string;
+  duration: string;
+  coordinates: Array<{lat: number, lng: number}>;
+  polyline: string;
+}
+
 export class WeatherService {
   private static instance: WeatherService;
-  private readonly apiKey = 'your-openweather-api-key'; // Would be from Supabase secrets in production
 
   static getInstance(): WeatherService {
     if (!WeatherService.instance) {
@@ -35,54 +43,73 @@ export class WeatherService {
   }
 
   async getWeatherForCity(city: string): Promise<WeatherData> {
-    // Mock data for demo - in production would fetch from OpenWeatherMap API
-    const mockData: WeatherData = {
-      name: city,
-      main: {
-        temp: 26.8,
-        pressure: 1013,
-        feels_like: 18.5
-      },
-      weather: [{
-        main: "Snow",
-        description: "light snow"
-      }],
-      wind: {
-        speed: 8.2
-      },
-      snow_depth: Math.random() * 8 + 1 // Random snow depth between 1-9 inches
-    };
+    try {
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { city }
+      });
 
-    return new Promise(resolve => {
-      setTimeout(() => resolve(mockData), 500);
-    });
-  }
-
-  async analyzeRouteWeather(coordinates: Array<{lat: number, lng: number}>): Promise<RouteSegment[]> {
-    // Analyze weather conditions for each segment of the route
-    const segments: RouteSegment[] = [];
-
-    for (const coord of coordinates) {
-      const snowDepth = Math.random() * 10; // Mock snow depth
-      let safetyScore: 'safe' | 'caution' | 'danger' = 'safe';
-
-      if (snowDepth > 6) {
-        safetyScore = 'danger';
-      } else if (snowDepth > 3) {
-        safetyScore = 'caution';
+      if (error) {
+        console.error('Weather API error:', error);
+        throw new Error('Failed to fetch weather data');
       }
 
-      segments.push({
-        lat: coord.lat,
-        lng: coord.lng,
-        snowDepth,
-        safetyScore
-      });
+      return data;
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      throw error;
     }
+  }
 
-    return new Promise(resolve => {
-      setTimeout(() => resolve(segments), 300);
-    });
+  async getRouteData(startLocation: string, endLocation: string, travelMode: string): Promise<RouteData> {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-route', {
+        body: { startLocation, endLocation, travelMode }
+      });
+
+      if (error) {
+        console.error('Route API error:', error);
+        throw new Error('Failed to fetch route data');
+      }
+
+      return data.route;
+    } catch (error) {
+      console.error('Error fetching route:', error);
+      throw error;
+    }
+  }
+
+  async analyzeRouteWeather(
+    coordinates: Array<{lat: number, lng: number}>, 
+    vehicleInfo?: { type: string; tires: string; drive: string },
+    travelMode: string = 'driving'
+  ): Promise<{
+    routeSegments: RouteSegment[];
+    avgSnowDepth: number;
+    overallSafety: 'safe' | 'caution' | 'danger';
+    vehicleSafetyMessage: string;
+    recommendation: string;
+  }> {
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-route-safety', {
+        body: { coordinates, vehicleInfo, travelMode }
+      });
+
+      if (error) {
+        console.error('Route analysis error:', error);
+        throw new Error('Failed to analyze route safety');
+      }
+
+      return {
+        routeSegments: data.routeSegments,
+        avgSnowDepth: data.avgSnowDepth,
+        overallSafety: data.overallSafety,
+        vehicleSafetyMessage: data.vehicleSafetyMessage,
+        recommendation: data.recommendation
+      };
+    } catch (error) {
+      console.error('Error analyzing route:', error);
+      throw error;
+    }
   }
 
   calculateVehicleSafety(

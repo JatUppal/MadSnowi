@@ -28,46 +28,30 @@ const Index = () => {
     try {
       const weatherService = WeatherService.getInstance();
       
-      // Simulate route analysis
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Get real route data from Google Maps
+      const routeData = await weatherService.getRouteData(
+        data.startLocation,
+        data.endLocation,
+        data.travelMode
+      );
       
-      // Mock coordinates for route analysis
-      const mockCoordinates = [
-        { lat: 43.0742, lng: -89.3837 }, // Madison
-        { lat: 43.0850, lng: -89.3900 }, // Route point 1
-        { lat: 43.0950, lng: -89.4000 }, // Route point 2
-      ];
+      // Analyze route safety with real weather data
+      const safetyAnalysis = await weatherService.analyzeRouteWeather(
+        routeData.coordinates,
+        data.vehicleInfo,
+        data.travelMode
+      );
       
-      const routeSegments = await weatherService.analyzeRouteWeather(mockCoordinates);
-      const avgSnowDepth = routeSegments.reduce((sum, seg) => sum + seg.snowDepth, 0) / routeSegments.length;
-      
-      let vehicleSafety: { score: 'safe' | 'caution' | 'danger'; message: string } = { 
-        score: 'safe', 
-        message: 'Good conditions for travel' 
-      };
-      
-      if (data.travelMode === 'driving' && data.vehicleInfo?.type) {
-        vehicleSafety = weatherService.calculateVehicleSafety(
-          avgSnowDepth,
-          data.vehicleInfo.type,
-          data.vehicleInfo.tires || 'regular',
-          data.vehicleInfo.drive || 'fwd'
-        );
-      }
-      
+      // Get weather for the general area
       const weatherData = await weatherService.getWeatherForCity('Madison');
       
-      const mockRouteData = {
-        distance: '12.4 miles',
-        duration: '25 minutes',
-        snowDepth: avgSnowDepth,
-        safetyScore: vehicleSafety.score,
-        vehicleSafety: vehicleSafety.message,
-        recommendation: weatherService.generateRecommendation(
-          vehicleSafety.score,
-          avgSnowDepth,
-          weatherData.main.temp
-        ),
+      const routeResults = {
+        distance: routeData.distance,
+        duration: routeData.duration,
+        snowDepth: safetyAnalysis.avgSnowDepth,
+        safetyScore: safetyAnalysis.overallSafety,
+        vehicleSafety: safetyAnalysis.vehicleSafetyMessage,
+        recommendation: safetyAnalysis.recommendation,
         weatherConditions: {
           temperature: Math.round(weatherData.main.temp),
           windChill: weatherData.main.feels_like ? Math.round(weatherData.main.feels_like) : undefined,
@@ -75,9 +59,22 @@ const Index = () => {
         }
       };
       
-      setRouteData(mockRouteData);
+      setRouteData(routeResults);
     } catch (error) {
       console.error('Error analyzing route:', error);
+      // Set error state or show user-friendly message
+      setRouteData({
+        distance: 'Unable to calculate',
+        duration: 'Unable to calculate',
+        snowDepth: 0,
+        safetyScore: 'caution' as const,
+        vehicleSafety: 'Unable to analyze route safety. Please try again.',
+        recommendation: 'Please check your internet connection and try again.',
+        weatherConditions: {
+          temperature: 32,
+          conditions: 'Unknown'
+        }
+      });
     } finally {
       setLoading(false);
     }
