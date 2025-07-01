@@ -52,6 +52,11 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				winter: {
+					safe: 'hsl(var(--winter-safe))',
+					caution: 'hsl(var(--winter-caution))',
+					danger: 'hsl(var(--winter-danger))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -84,11 +89,30 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'snow-fall': {
+					'0%': { transform: 'translateY(-100vh) rotate(0deg)' },
+					'100%': { transform: 'translateY(100vh) rotate(360deg)' }
+				},
+				'frost-pulse': {
+					'0%, 100%': { opacity: '1', transform: 'scale(1)' },
+					'50%': { opacity: '0.8', transform: 'scale(1.02)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'snow-fall': 'snow-fall 3s linear infinite',
+				'frost-pulse': 'frost-pulse 2s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'gradient-winter': 'var(--gradient-winter)',
+				'gradient-ice': 'var(--gradient-ice)',
+				'gradient-snow': 'var(--gradient-snow)'
+			},
+			boxShadow: {
+				'snow': 'var(--shadow-snow)',
+				'ice': 'var(--shadow-ice)'
 			}
 		}
 	},
