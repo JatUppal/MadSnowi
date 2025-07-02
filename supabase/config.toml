@@ -1,1 +1,10 @@
 project_id = "fbpbnpleczgondniojmy"
+
+[functions.get-weather]
+verify_jwt = false
+
+[functions.get-route]
+verify_jwt = false
+
+[functions.analyze-route-safety]
+verify_jwt = false
