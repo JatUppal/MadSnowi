@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Snowflake, Target } from 'lucide-react';
+import { useLoadScript } from '@react-google-maps/api';
+import AutocompleteInput from './AutocompleteInput';
 
 interface VehicleInfo {
   type: 'sedan' | 'suv' | 'truck' | '';
@@ -12,11 +13,20 @@ interface VehicleInfo {
   drive: 'fwd' | 'awd' | '4wd' | '';
 }
 
+interface PlaceDetails {
+  address: string;
+  placeId: string;
+  lat?: number;
+  lng?: number;
+}
+
 interface RouteSearchData {
   startLocation: string;
   endLocation: string;
   travelMode: 'driving' | 'walking' | 'biking' | '';
   vehicleInfo?: VehicleInfo;
+  startPlaceDetails?: PlaceDetails;
+  endPlaceDetails?: PlaceDetails;
 }
 
 interface Props {
@@ -25,6 +35,11 @@ interface Props {
 }
 
 const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBMtL5TzN6Mh6G2rfn5_fbTXDoluWW5rEI',
+    libraries: ['places'],
+  });
+
   const [formData, setFormData] = useState<RouteSearchData>({
     startLocation: '',
     endLocation: '',
@@ -36,6 +51,22 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
     }
   });
 
+  const handleStartLocationChange = (address: string, placeDetails?: PlaceDetails) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      startLocation: address,
+      startPlaceDetails: placeDetails
+    }));
+  };
+
+  const handleEndLocationChange = (address: string, placeDetails?: PlaceDetails) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      endLocation: address,
+      endPlaceDetails: placeDetails
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.startLocation && formData.endLocation && formData.travelMode) {
@@ -44,6 +75,17 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
   };
 
   const isDriving = formData.travelMode === 'driving';
+
+  if (!isLoaded) {
+    return (
+      <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
+        <div className="p-6 flex items-center justify-center">
+          <Snowflake className="h-6 w-6 animate-spin text-primary mr-2" />
+          <span className="text-foreground">Loading Google Maps...</span>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
@@ -63,21 +105,21 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">🧀 Start Location</Label>
-              <Input
+              <AutocompleteInput
                 id="start"
                 placeholder="Enter starting point (e.g., UW-Madison)"
                 value={formData.startLocation}
-                onChange={(e) => setFormData(prev => ({ ...prev, startLocation: e.target.value }))}
+                onChange={handleStartLocationChange}
                 className="bg-card/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="end">🎯 Destination</Label>
-              <Input
+              <AutocompleteInput
                 id="end"
                 placeholder="Enter destination"
                 value={formData.endLocation}
-                onChange={(e) => setFormData(prev => ({ ...prev, endLocation: e.target.value }))}
+                onChange={handleEndLocationChange}
                 className="bg-card/50 backdrop-blur-sm"
               />
             </div>
