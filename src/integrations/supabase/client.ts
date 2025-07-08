@@ -2,8 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://fbpbnpleczgondniojmy.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZicGJucGxlY3pnb25kbmlvam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MTQwMDcsImV4cCI6MjA2Njk5MDAwN30.jCEbNgqASgi16vbGB2nADQh2tfGzpjzD1xEYHYtLd18";
+// Use hardcoded values if environment variables are placeholders or missing
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL && 
+  !import.meta.env.VITE_SUPABASE_URL.includes('your_supabase_url_here') 
+  ? import.meta.env.VITE_SUPABASE_URL 
+  : "https://fbpbnpleczgondniojmy.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY && 
+  !import.meta.env.VITE_SUPABASE_ANON_KEY.includes('your_supabase_anon_key_here')
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY 
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZicGJucGxlY3pnb25kbmlvam15Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE0MTQwMDcsImV4cCI6MjA2Njk5MDAwN30.jCEbNgqASgi16vbGB2nADQh2tfGzpjzD1xEYHYtLd18";
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

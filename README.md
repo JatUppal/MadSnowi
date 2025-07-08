@@ -4,6 +4,46 @@
 
 **URL**: https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9
 
+## Environment Setup
+
+This project requires the following environment variables to be configured:
+
+### Google Maps API Key
+The application uses Google Maps for route display and navigation. You need to:
+
+1. Get a Google Maps API key from the [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the following APIs:
+   - Maps JavaScript API
+   - Directions API
+   - Places API
+3. Create a `.env` file in the project root with:
+   ```
+   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+   ```
+
+### OpenWeather API Key (for Supabase Backend)
+For weather data functionality, you'll need:
+
+1. Get an OpenWeather API key from [OpenWeather](https://openweathermap.org/api)
+2. Add to your `.env` file:
+   ```
+   OPENWEATHER_API_KEY=your_openweather_api_key_here
+   ```
+3. Set this as an environment variable in your Supabase project settings
+
+### Supabase Configuration (Optional)
+For backend functionality, you'll also need:
+```
+VITE_SUPABASE_URL=your_supabase_url_here
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+```
+
+### Fallback Mode
+The app includes fallback functionality that works without the backend APIs. If Supabase functions fail, the app will:
+- Generate realistic mock weather data for Madison, WI
+- Provide simulated route analysis
+- Continue to function with Google Maps integration
+
 ## How can I edit this code?
 
 There are several ways of editing your application.
@@ -32,7 +72,9 @@ cd <YOUR_PROJECT_NAME>
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Set up environment variables (see Environment Setup above)
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
@@ -59,6 +101,10 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- @react-google-maps/api
+- Google Maps JavaScript API
+- Supabase (Edge Functions)
+- OpenWeather API
 
 ## How can I deploy this project?
 

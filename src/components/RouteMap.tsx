@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Snowflake, MapPin, Route, Loader2 } from 'lucide-react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { Snowflake, MapPin, Loader2 } from 'lucide-react';
+import { GoogleMap, DirectionsService, DirectionsRenderer, LoadScript, Marker } from '@react-google-maps/api';
 
 interface RouteMapProps {
   startLocation?: string;
@@ -11,111 +11,89 @@ interface RouteMapProps {
   routeData?: any;
 }
 
+const DEFAULT_CENTER = { lat: 43.0731, lng: -89.4012 }; // UW-Madison
+
 const RouteMap: React.FC<RouteMapProps> = ({ 
   startLocation, 
   endLocation, 
   travelMode,
   routeData 
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<any>(null);
-  const [directionsService, setDirectionsService] = useState<any>(null);
-  const [directionsRenderer, setDirectionsRenderer] = useState<any>(null);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [center, setCenter] = useState(DEFAULT_CENTER);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Initialize Google Maps
+  // Get API key from environment variable
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  // Static libraries array to prevent performance warnings
+  const libraries: ("places")[] = ['places'];
+
   useEffect(() => {
-    const initMap = async () => {
-      try {
-        const loader = new Loader({
-          apiKey: "AIzaSyB4QJhSxEL-9qJz6Qaqvu_BVDBErBOiTY4",
-          version: "weekly",
-          libraries: ["places"]
-        });
-
-        const { Map } = await loader.importLibrary("maps");
-        const { DirectionsService, DirectionsRenderer } = await loader.importLibrary("routes");
-
-        if (!mapRef.current) return;
-
-        // Center on Madison, WI
-        const mapInstance = new Map(mapRef.current, {
-          center: { lat: 43.0731, lng: -89.4012 },
-          zoom: 12,
-          mapTypeId: 'roadmap',
-          styles: [
-            {
-              featureType: "all",
-              elementType: "geometry.fill",
-              stylers: [{ color: "#f8faff" }]
-            },
-            {
-              featureType: "water",
-              elementType: "geometry.fill",
-              stylers: [{ color: "#a8d0ff" }]
-            },
-            {
-              featureType: "road",
-              elementType: "geometry.stroke",
-              stylers: [{ color: "#d4e6ff" }]
-            }
-          ]
-        });
-
-        const dirService = new DirectionsService();
-        const dirRenderer = new DirectionsRenderer({
-          suppressMarkers: false,
-          polylineOptions: {
-            strokeColor: "#2563eb",
-            strokeWeight: 4,
-            strokeOpacity: 0.8
-          }
-        });
-
-        dirRenderer.setMap(mapInstance);
-
-        setMap(mapInstance);
-        setDirectionsService(dirService);
-        setDirectionsRenderer(dirRenderer);
-      } catch (err) {
-        console.error('Error loading Google Maps:', err);
-        setError('Failed to load Google Maps');
-      }
-    };
-
-    initMap();
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setCenter(coords);
+          setUserLocation(coords);
+        },
+        () => {
+          setCenter(DEFAULT_CENTER);
+          setUserLocation(null);
+        },
+        { timeout: 5000 }
+      );
+    } else {
+      setCenter(DEFAULT_CENTER);
+      setUserLocation(null);
+    }
   }, []);
 
-  // Update route when locations change
   useEffect(() => {
-    if (!startLocation || !endLocation || !directionsService || !directionsRenderer) {
-      return;
+    console.log("✅ Google Maps API Key:", import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
+    console.log("🔍 API Key length:", apiKey?.length);
+    console.log("🔍 API Key starts with AIzaSy:", apiKey?.startsWith('AIzaSy'));
+  }, [apiKey]);
+
+  if (!apiKey || apiKey === 'your_actual_google_maps_api_key_here') {
+    console.warn('Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY environment variable.');
+    console.log("❌ API Key validation failed:", { apiKey, hasApiKey: !!apiKey, isPlaceholder: apiKey === 'your_actual_google_maps_api_key_here' });
+    return (
+      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow">
+        <div className="text-center space-y-4">
+          <AlertDescription className="text-red-600">
+            Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY environment variable.
+          </AlertDescription>
+        </div>
+      </Card>
+    );
+  }
+
+  const directionsCallback = (response: google.maps.DirectionsResult | null, status: google.maps.DirectionsStatus) => {
+    setLoading(false);
+    if (response !== null && status === 'OK') {
+      setDirections(response);
+      setError(null);
+    } else {
+      setError(`Failed to get directions: ${status || 'Unknown error'}`);
+      console.error('Directions request failed:', status);
     }
+  };
 
-    setLoading(true);
-    setError(null);
-
-    const request: any = {
-      origin: startLocation,
-      destination: endLocation,
-      travelMode: travelMode === 'driving' ? 'DRIVING' :
-                 travelMode === 'walking' ? 'WALKING' :
-                 travelMode === 'biking' ? 'BICYCLING' :
-                 'DRIVING'
-    };
-
-    directionsService.route(request, (result: any, status: string) => {
-      setLoading(false);
-      
-      if (status === 'OK' && result) {
-        directionsRenderer.setDirections(result);
-      } else {
-        setError(`Failed to get directions: ${status}`);
-        console.error('Directions request failed:', status);
-      }
-    });
-  }, [startLocation, endLocation, travelMode, directionsService, directionsRenderer, map]);
+  const getTravelMode = (mode: string): google.maps.TravelMode => {
+    switch (mode) {
+      case 'walking':
+        return google.maps.TravelMode.WALKING;
+      case 'biking':
+        return google.maps.TravelMode.BICYCLING;
+      case 'transit':
+        return google.maps.TravelMode.TRANSIT;
+      default:
+        return google.maps.TravelMode.DRIVING;
+    }
+  };
 
   const showRoute = startLocation && endLocation;
 
@@ -132,34 +110,58 @@ const RouteMap: React.FC<RouteMapProps> = ({
     );
   }
 
-  if (!showRoute) {
-    return (
-      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow">
-        <div className="text-center space-y-4">
-          <Snowflake className="h-12 w-12 text-primary mx-auto animate-frost-pulse" />
-          <div>
-            <h3 className="text-lg font-semibold">Interactive Winter Map</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              Enter start and end locations to display winter-safe routes with real-time snow conditions
-            </p>
-          </div>
-          <Alert className="max-w-md mx-auto border-accent/50 bg-accent/20">
-            <MapPin className="h-4 w-4" />
-            <AlertDescription className="text-xs">
-              Google Maps API integration ready for live route display
-            </AlertDescription>
-          </Alert>
-        </div>
-      </Card>
-    );
-  }
-
   return (
     <Card className="w-full h-96 overflow-hidden shadow-ice bg-gradient-winter">
-      <div className="relative w-full h-full">
-        {/* Google Maps Container */}
-        <div ref={mapRef} className="w-full h-full" />
-        
+      <div className="relative w-full h-full" style={{ height: '100%' }}>
+        <LoadScript
+          googleMapsApiKey={apiKey || ''}
+          libraries={libraries}
+        >
+          <GoogleMap
+            mapContainerClassName="w-full h-full"
+            mapContainerStyle={{ height: '100%' }}
+            center={center}
+            zoom={15}
+            options={{
+              mapTypeId: 'roadmap',
+            }}
+          >
+            {/* User location marker */}
+            {userLocation && (
+              <Marker
+                position={userLocation}
+                icon={{
+                  url: "/badger.png",
+                  scaledSize: { width: 40, height: 40 } as google.maps.Size
+                }}
+                title="Your Location"
+              />
+            )}
+            {showRoute && (
+              <DirectionsService
+                options={{
+                  origin: startLocation,
+                  destination: endLocation,
+                  travelMode: getTravelMode(travelMode || 'driving')
+                }}
+                callback={directionsCallback}
+              />
+            )}
+            {directions && (
+              <DirectionsRenderer
+                options={{
+                  directions: directions,
+                  suppressMarkers: false,
+                  polylineOptions: {
+                    strokeColor: "#2563eb",
+                    strokeWeight: 4,
+                    strokeOpacity: 0.8
+                  }
+                }}
+              />
+            )}
+          </GoogleMap>
+        </LoadScript>
         {/* Loading overlay */}
         {loading && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
@@ -169,12 +171,10 @@ const RouteMap: React.FC<RouteMapProps> = ({
             </div>
           </div>
         )}
-        
         {/* Winter overlay info */}
         <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-2">
           <div className="text-xs font-medium">🦡 Madison Winter Routes</div>
         </div>
-        
         {/* Route info overlay */}
         {showRoute && !loading && (
           <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-2">
