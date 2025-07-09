@@ -5,7 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Snowflake, Target } from 'lucide-react';
 import { useLoadScript } from '@react-google-maps/api';
-import AutocompleteInput from './AutocompleteInput';
+import PlacesAutocompleteInput from './PlacesAutocompleteInput';
+
+// Static libraries array to prevent performance warnings
+const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
 
 interface VehicleInfo {
   type: 'sedan' | 'suv' | 'truck' | '';
@@ -37,7 +40,7 @@ interface Props {
 const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBMtL5TzN6Mh6G2rfn5_fbTXDoluWW5rEI',
-    libraries: ['places'],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const [formData, setFormData] = useState<RouteSearchData>({
@@ -105,21 +108,19 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">🧀 Start Location</Label>
-              <AutocompleteInput
-                id="start"
+              <PlacesAutocompleteInput
+                defaultValue={formData.startLocation}
+                onSelect={address => handleStartLocationChange(address)}
                 placeholder="Enter starting point (e.g., UW-Madison)"
-                value={formData.startLocation}
-                onChange={handleStartLocationChange}
                 className="bg-card/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="end">🎯 Destination</Label>
-              <AutocompleteInput
-                id="end"
+              <PlacesAutocompleteInput
+                defaultValue={formData.endLocation}
+                onSelect={address => handleEndLocationChange(address)}
                 placeholder="Enter destination"
-                value={formData.endLocation}
-                onChange={handleEndLocationChange}
                 className="bg-card/50 backdrop-blur-sm"
               />
             </div>

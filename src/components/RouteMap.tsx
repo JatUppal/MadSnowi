@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Snowflake, MapPin, Loader2 } from 'lucide-react';
@@ -57,6 +57,9 @@ const RouteMap: React.FC<RouteMapProps> = ({
     console.log("🔍 API Key starts with AIzaSy:", apiKey?.startsWith('AIzaSy'));
   }, [apiKey]);
 
+  // Memoize directions to prevent flicker
+  const memoizedDirections = useMemo(() => directions, [directions]);
+
   if (!apiKey || apiKey === 'your_actual_google_maps_api_key_here') {
     console.warn('Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY environment variable.');
     console.log("❌ API Key validation failed:", { apiKey, hasApiKey: !!apiKey, isPlaceholder: apiKey === 'your_actual_google_maps_api_key_here' });
@@ -96,6 +99,15 @@ const RouteMap: React.FC<RouteMapProps> = ({
   };
 
   const showRoute = startLocation && endLocation;
+
+  // Get origin and destination LatLng from directions if available
+  let originLatLng = null;
+  let destLatLng = null;
+  if (memoizedDirections && memoizedDirections.routes.length > 0) {
+    const leg = memoizedDirections.routes[0].legs[0];
+    originLatLng = leg.start_location;
+    destLatLng = leg.end_location;
+  }
 
   if (error) {
     return (
@@ -137,6 +149,29 @@ const RouteMap: React.FC<RouteMapProps> = ({
                 title="Your Location"
               />
             )}
+            {/* Custom origin and destination markers */}
+            {originLatLng && (
+              <Marker
+                position={originLatLng}
+                icon={{
+                  url: "/badger.png",
+                  scaledSize: { width: 40, height: 40 } as google.maps.Size
+                }}
+                title="Origin"
+                zIndex={2}
+              />
+            )}
+            {destLatLng && (
+              <Marker
+                position={destLatLng}
+                icon={{
+                  url: "/cheese.png",
+                  scaledSize: { width: 40, height: 40 } as google.maps.Size
+                }}
+                title="Destination"
+                zIndex={2}
+              />
+            )}
             {showRoute && (
               <DirectionsService
                 options={{
@@ -147,11 +182,11 @@ const RouteMap: React.FC<RouteMapProps> = ({
                 callback={directionsCallback}
               />
             )}
-            {directions && (
+            {memoizedDirections && (
               <DirectionsRenderer
                 options={{
-                  directions: directions,
-                  suppressMarkers: false,
+                  directions: memoizedDirections,
+                  suppressMarkers: true,
                   polylineOptions: {
                     strokeColor: "#2563eb",
                     strokeWeight: 4,
