@@ -175,12 +175,14 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
       e.preventDefault();
       setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
     } else if (e.key === 'Enter') {
+      e.preventDefault();
       if (activeIndex >= 0 && activeIndex < suggestions.length) {
         selectSuggestion(suggestions[activeIndex]);
       }
-    } else if (e.key === 'Escape') {
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
       setShowDropdown(false);
       setActiveIndex(-1);
+      setSuggestions([]);
     }
   };
 
@@ -192,6 +194,10 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
     setSuggestions([]); // Clear suggestions immediately
     // Create new session token after selection for next interaction
     createNewSessionToken();
+    // Keep input focused after selection
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,7 +250,7 @@ const PlacesAutocompleteInput: React.FC<PlacesAutocompleteInputProps> = ({
         <div
           ref={dropdownRef}
           id="places-autocomplete-list"
-          className="w-full bg-white border border-gray-200 rounded shadow-lg max-h-56 overflow-auto mt-1"
+          className="w-full bg-white border border-gray-200 rounded shadow-lg max-h-56 overflow-auto mt-1 transition-opacity duration-150 ease-out"
           role="listbox"
         >
           {suggestions.map((suggestion, idx) => (
