@@ -104,7 +104,7 @@ const Index = () => {
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Left: Map and Route Results */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             <RouteMap 
               startLocation={searchData?.startLocation}
               endLocation={searchData?.endLocation}
