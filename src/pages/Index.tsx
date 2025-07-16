@@ -90,8 +90,14 @@ const Index = () => {
           <div className="lg:col-span-2">
             <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
           </div>
-          <div>
+          <div className="space-y-5">
             <WeatherDashboard city="Madison" />
+            <DirectionsBox 
+              routeData={routeData}
+              startLocation={searchData?.startLocation}
+              endLocation={searchData?.endLocation}
+              loading={loading}
+            />
           </div>
         </div>
 
@@ -108,14 +114,8 @@ const Index = () => {
             <RouteResults routeData={routeData} loading={loading} />
           </div>
           
-          {/* Right: Directions and Hazard Reports */}
-          <div className="space-y-6">
-            <DirectionsBox 
-              routeData={routeData}
-              startLocation={searchData?.startLocation}
-              endLocation={searchData?.endLocation}
-              loading={loading}
-            />
+          {/* Right: Hazard Reports Only */}
+          <div>
             <HazardReporterCard />
           </div>
         </div>

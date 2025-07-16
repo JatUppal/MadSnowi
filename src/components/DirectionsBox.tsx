@@ -50,14 +50,14 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
 
   if (!startLocation || !endLocation) {
     return (
-      <Card className="bg-gradient-winter shadow-snow">
+      <Card className="bg-gradient-winter shadow-snow h-[280px]">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Navigation className="h-5 w-5 text-muted-foreground" />
             Turn-by-Turn Directions
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex items-center justify-center h-full">
           <div className="text-center py-6">
             <MapPin className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">
@@ -70,7 +70,7 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
   }
 
   return (
-    <Card className="bg-gradient-winter shadow-snow">
+    <Card className="bg-gradient-winter shadow-snow h-[320px]">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Navigation className="h-5 w-5 text-primary" />
@@ -86,8 +86,8 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3 max-h-48 overflow-y-auto">
+      <CardContent className="h-full overflow-hidden">
+        <div className="space-y-3 max-h-52 overflow-y-auto">
           {mockDirections.map((step, index) => (
             <div
               key={index}
