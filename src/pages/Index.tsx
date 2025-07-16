@@ -4,6 +4,7 @@ import RouteMap from '@/components/RouteMap';
 import RouteResults from '@/components/RouteResults';
 import WeatherDashboard from '@/components/WeatherDashboard';
 import HazardReporterCard from '@/components/HazardReporterCard';
+import DirectionsBox from '@/components/DirectionsBox';
 import { WeatherService } from '@/services/weatherService';
 
 interface RouteSearchData {
@@ -84,9 +85,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-snow">
       <div className="container mx-auto px-4 py-8 space-y-8">
-        {/* Route Search Form - Full Width */}
-        <div className="w-full">
-          <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
+        {/* Top Row: Route Search + Weather */}
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
+          </div>
+          <div>
+            <WeatherDashboard city="Madison" />
+          </div>
         </div>
 
         {/* Main Content Grid */}
@@ -102,9 +108,14 @@ const Index = () => {
             <RouteResults routeData={routeData} loading={loading} />
           </div>
           
-          {/* Right: Weather and Hazard Reports */}
+          {/* Right: Directions and Hazard Reports */}
           <div className="space-y-6">
-            <WeatherDashboard city="Madison" />
+            <DirectionsBox 
+              routeData={routeData}
+              startLocation={searchData?.startLocation}
+              endLocation={searchData?.endLocation}
+              loading={loading}
+            />
             <HazardReporterCard />
           </div>
         </div>
