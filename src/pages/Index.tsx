@@ -3,6 +3,7 @@ import RouteSearchForm from '@/components/RouteSearchForm';
 import RouteMap from '@/components/RouteMap';
 import RouteResults from '@/components/RouteResults';
 import WeatherDashboard from '@/components/WeatherDashboard';
+import HazardReporterCard from '@/components/HazardReporterCard';
 import { WeatherService } from '@/services/weatherService';
 
 interface RouteSearchData {
@@ -88,8 +89,9 @@ const Index = () => {
           <div className="lg:col-span-2">
             <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
           </div>
-          <div>
+          <div className="space-y-6">
             <WeatherDashboard city="Madison" />
+            <HazardReporterCard />
           </div>
         </div>
 
