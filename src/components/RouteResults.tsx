@@ -42,7 +42,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
 
   if (!routeData) {
     return (
-      <Card className="w-full bg-gradient-winter shadow-snow">
+      <Card className="w-full bg-gradient-winter shadow-snow h-[400px] flex items-center justify-center">
         <div className="p-6 text-center">
           <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-muted-foreground">
