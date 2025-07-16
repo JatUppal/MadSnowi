@@ -102,7 +102,7 @@ const Index = () => {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-2">
           {/* Left: Map and Route Results */}
           <div className="lg:col-span-2 space-y-4">
             <RouteMap 

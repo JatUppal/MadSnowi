@@ -9,20 +9,17 @@ import PlacesAutocompleteInput from './PlacesAutocompleteInput';
 
 // Static libraries array to prevent performance warnings
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
-
 interface VehicleInfo {
   type: 'sedan' | 'suv' | 'truck' | '';
   tires: 'regular' | 'snow' | '';
   drive: 'fwd' | 'awd' | '4wd' | '';
 }
-
 interface PlaceDetails {
   address: string;
   placeId: string;
   lat?: number;
   lng?: number;
 }
-
 interface RouteSearchData {
   startLocation: string;
   endLocation: string;
@@ -31,18 +28,20 @@ interface RouteSearchData {
   startPlaceDetails?: PlaceDetails;
   endPlaceDetails?: PlaceDetails;
 }
-
 interface Props {
   onSearch: (data: RouteSearchData) => void;
   loading?: boolean;
 }
-
-const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
-  const { isLoaded } = useLoadScript({
+const RouteSearchForm: React.FC<Props> = ({
+  onSearch,
+  loading = false
+}) => {
+  const {
+    isLoaded
+  } = useLoadScript({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBMtL5TzN6Mh6G2rfn5_fbTXDoluWW5rEI',
-    libraries: GOOGLE_MAPS_LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES
   });
-
   const [formData, setFormData] = useState<RouteSearchData>({
     startLocation: '',
     endLocation: '',
@@ -53,45 +52,36 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
       drive: ''
     }
   });
-
   const handleStartLocationChange = (address: string, placeDetails?: PlaceDetails) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       startLocation: address,
       startPlaceDetails: placeDetails
     }));
   };
-
   const handleEndLocationChange = (address: string, placeDetails?: PlaceDetails) => {
-    setFormData(prev => ({ 
-      ...prev, 
+    setFormData(prev => ({
+      ...prev,
       endLocation: address,
       endPlaceDetails: placeDetails
     }));
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.startLocation && formData.endLocation && formData.travelMode) {
       onSearch(formData);
     }
   };
-
   const isDriving = formData.travelMode === 'driving';
-
   if (!isLoaded) {
-    return (
-      <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
+    return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
         <div className="p-6 flex items-center justify-center">
           <Snowflake className="h-6 w-6 animate-spin text-primary mr-2" />
           <span className="text-foreground">Loading Google Maps...</span>
         </div>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
+  return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
       <div className="p-4 space-y-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-primary/10 rounded-lg">
@@ -99,7 +89,7 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">MadSnowi</h1>
-            <p className="text-sm text-muted-foreground">Winter-Safe Route Planner for Wisconsin</p>
+            <p className="text-sm text-muted-foreground">AI Winter-Safe Route Planner for Wisconsin</p>
           </div>
         </div>
 
@@ -108,33 +98,21 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">🧀 Start Location</Label>
-              <PlacesAutocompleteInput
-                defaultValue={formData.startLocation}
-                onSelect={address => handleStartLocationChange(address)}
-                placeholder="Enter starting point (e.g., UW-Madison)"
-                className="bg-card/50 backdrop-blur-sm"
-              />
+              <PlacesAutocompleteInput defaultValue={formData.startLocation} onSelect={address => handleStartLocationChange(address)} placeholder="Enter starting point (e.g., UW-Madison)" className="bg-card/50 backdrop-blur-sm" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="end">🎯 Destination</Label>
-              <PlacesAutocompleteInput
-                defaultValue={formData.endLocation}
-                onSelect={address => handleEndLocationChange(address)}
-                placeholder="Enter destination"
-                className="bg-card/50 backdrop-blur-sm"
-              />
+              <PlacesAutocompleteInput defaultValue={formData.endLocation} onSelect={address => handleEndLocationChange(address)} placeholder="Enter destination" className="bg-card/50 backdrop-blur-sm" />
             </div>
           </div>
 
           {/* Travel Mode */}
           <div className="space-y-2">
             <Label>Travel Mode</Label>
-            <Select 
-              value={formData.travelMode} 
-              onValueChange={(value: 'driving' | 'walking' | 'biking') => 
-                setFormData(prev => ({ ...prev, travelMode: value }))
-              }
-            >
+            <Select value={formData.travelMode} onValueChange={(value: 'driving' | 'walking' | 'biking') => setFormData(prev => ({
+            ...prev,
+            travelMode: value
+          }))}>
               <SelectTrigger className="bg-card/50 backdrop-blur-sm">
                 <SelectValue placeholder="Select how you'll travel" />
               </SelectTrigger>
@@ -147,21 +125,18 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
           </div>
 
           {/* Vehicle Info (only for driving) */}
-          {isDriving && (
-            <Card className="p-4 bg-accent/30 border-accent/50">
+          {isDriving && <Card className="p-4 bg-accent/30 border-accent/50">
               <h3 className="font-semibold mb-3 text-foreground">Vehicle Information</h3>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Vehicle Type</Label>
-                  <Select 
-                    value={formData.vehicleInfo?.type || ''} 
-                    onValueChange={(value: 'sedan' | 'suv' | 'truck') => 
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        vehicleInfo: { ...prev.vehicleInfo!, type: value }
-                      }))
-                    }
-                  >
+                  <Select value={formData.vehicleInfo?.type || ''} onValueChange={(value: 'sedan' | 'suv' | 'truck') => setFormData(prev => ({
+                ...prev,
+                vehicleInfo: {
+                  ...prev.vehicleInfo!,
+                  type: value
+                }
+              }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select vehicle" />
                     </SelectTrigger>
@@ -175,15 +150,13 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
 
                 <div className="space-y-2">
                   <Label>Tire Type</Label>
-                  <Select 
-                    value={formData.vehicleInfo?.tires || ''} 
-                    onValueChange={(value: 'regular' | 'snow') => 
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        vehicleInfo: { ...prev.vehicleInfo!, tires: value }
-                      }))
-                    }
-                  >
+                  <Select value={formData.vehicleInfo?.tires || ''} onValueChange={(value: 'regular' | 'snow') => setFormData(prev => ({
+                ...prev,
+                vehicleInfo: {
+                  ...prev.vehicleInfo!,
+                  tires: value
+                }
+              }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select tires" />
                     </SelectTrigger>
@@ -196,15 +169,13 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
 
                 <div className="space-y-2">
                   <Label>Drive System</Label>
-                  <Select 
-                    value={formData.vehicleInfo?.drive || ''} 
-                    onValueChange={(value: 'fwd' | 'awd' | '4wd') => 
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        vehicleInfo: { ...prev.vehicleInfo!, drive: value }
-                      }))
-                    }
-                  >
+                  <Select value={formData.vehicleInfo?.drive || ''} onValueChange={(value: 'fwd' | 'awd' | '4wd') => setFormData(prev => ({
+                ...prev,
+                vehicleInfo: {
+                  ...prev.vehicleInfo!,
+                  drive: value
+                }
+              }))}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select drive" />
                     </SelectTrigger>
@@ -216,31 +187,19 @@ const RouteSearchForm: React.FC<Props> = ({ onSearch, loading = false }) => {
                   </Select>
                 </div>
               </div>
-            </Card>
-          )}
+            </Card>}
 
-          <Button 
-            type="submit" 
-            variant="winter"
-            className="w-full"
-            disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode}
-          >
-            {loading ? (
-              <>
+          <Button type="submit" variant="winter" className="w-full" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode}>
+            {loading ? <>
                 <Snowflake className="mr-2 h-4 w-4 animate-spin" />
                 Finding Safe Route...
-              </>
-            ) : (
-              <>
+              </> : <>
                 <Target className="mr-2 h-4 w-4" />
                 Find Winter-Safe Route
-              </>
-            )}
+              </>}
           </Button>
         </form>
       </div>
-    </Card>
-  );
+    </Card>;
 };
-
 export default RouteSearchForm;
