@@ -110,14 +110,6 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
           ))}
         </div>
         
-        <div className="mt-4 pt-3 border-t border-accent/20">
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>📍 From: {startLocation}</span>
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-            <span>🎯 To: {endLocation}</span>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
