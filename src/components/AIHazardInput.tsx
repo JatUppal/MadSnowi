@@ -76,23 +76,68 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
       const userLocation = await LocationService.requestUserLocation();
       
       if (userLocation && pendingHazard) {
-        const hazardReport = {
-          text: `${pendingHazard.hazardType}: ${pendingHazard.description}`,
-          location: {
-            address: userLocation.address || 'User location',
-            coordinates: {
-              lat: userLocation.lat,
-              lng: userLocation.lng
-            }
-          }
+        console.log('=== USER SHARED LOCATION ===');
+        console.log('Shared Location:', userLocation);
+        
+        // Store this location for future use
+        LocationService.storeLastKnownLocation(userLocation);
+        
+        // Create updated location context with the new location
+        const updatedLocationContext = {
+          lastKnownLocation: userLocation,
+          routeStartLocation: LocationService.getRouteStartLocation(),
+          routeDestinationLocation: LocationService.getRouteDestinationLocation()
         };
-
-        onHazardSubmit(hazardReport);
+        
+        console.log('Updated location context:', updatedLocationContext);
+        
+        // Re-analyze the hazard with the new location context
+        const aiService = AIService.getInstance();
+        try {
+          const updatedAnalysis = await aiService.analyzeHazardReport(
+            pendingHazard.description, 
+            updatedLocationContext
+          );
+          
+          console.log('Re-analysis with location:', updatedAnalysis);
+          
+          const hazardReport = {
+            text: `${updatedAnalysis.hazardType}: ${updatedAnalysis.description}`,
+            location: updatedAnalysis.location ? {
+              address: updatedAnalysis.location.address,
+              coordinates: updatedAnalysis.location.coordinates
+            } : {
+              address: userLocation.address || 'User location',
+              coordinates: {
+                lat: userLocation.lat,
+                lng: userLocation.lng
+              }
+            }
+          };
+          
+          onHazardSubmit(hazardReport);
+        } catch (reAnalysisError) {
+          console.log('Re-analysis failed, using direct location:', reAnalysisError);
+          
+          // Fallback: use the shared location directly
+          const hazardReport = {
+            text: `${pendingHazard.hazardType}: ${pendingHazard.description}`,
+            location: {
+              address: userLocation.address || 'User location',
+              coordinates: {
+                lat: userLocation.lat,
+                lng: userLocation.lng
+              }
+            }
+          };
+          
+          onHazardSubmit(hazardReport);
+        }
+        
         setInput('');
         resetLocationPrompt();
       } else {
-        // User denied location or error occurred
-        console.log('Could not get user location');
+        console.log('Could not get user location or no pending hazard');
       }
     } catch (error) {
       console.error('Error getting user location:', error);
