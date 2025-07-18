@@ -147,7 +147,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
 
       {/* Winter Travel Tips */}
       <Card className="bg-accent/20 border-accent/50">
-        <div className="p-4">
+        <div className="p-4 text-center">
           <h4 className="font-semibold mb-2 text-sm">🦡 Wisconsin Winter Tips</h4>
           <ul className="text-xs text-muted-foreground space-y-1">
             <li>• Keep emergency kit: blanket, water, snacks, phone charger</li>
