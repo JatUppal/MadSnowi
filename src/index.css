@@ -8,8 +8,8 @@ All colors MUST be HSL. UW-Madison winter theme with snow/ice aesthetics.
 
 @layer base {
   :root {
-    /* Winter white background */
-    --background: 210 20% 98%;
+    /* Winter light blue background */
+    --background: 200 30% 96%;
     --foreground: 210 15% 20%;
 
     /* Snow-white cards with subtle winter tint */
