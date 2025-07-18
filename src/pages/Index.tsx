@@ -70,7 +70,7 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-snow">
       <div className="container mx-auto px-4 py-8 bg-sky-100">
         {/* 2-Column Responsive Layout */}
-        <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
+        <div className="grid lg:grid-cols-[7fr_4fr] gap-6">
           {/* Left Column (60% width) */}
           <div className="space-y-6">
             {/* Route Input Form */}
