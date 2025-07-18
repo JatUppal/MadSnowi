@@ -189,7 +189,7 @@ const RouteSearchForm: React.FC<Props> = ({
               </div>
             </Card>}
 
-          <Button type="submit" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode} className="w-full text-base !bg-white hover:!bg-white disabled:!bg-white disabled:!opacity-100 text-red-500 disabled:!text-red-500/50 border border-gray-300 hover:!bg-gray-50 focus:!bg-white">
+          <Button type="submit" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode || (formData.travelMode === 'driving' && (!formData.vehicleInfo?.type || !formData.vehicleInfo?.tires || !formData.vehicleInfo?.drive))} className="w-full text-base !bg-white hover:!bg-white disabled:!bg-white disabled:!opacity-100 text-red-500 disabled:!text-red-500/50 border border-gray-300 hover:!bg-gray-50 focus:!bg-white">
             {loading ? <>
                 <Snowflake className="mr-2 h-4 w-4 animate-spin" />
                 Finding Safe Route...
