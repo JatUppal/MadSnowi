@@ -60,7 +60,12 @@ export class LocationService {
 
   static storeLastKnownLocation(location: UserLocation): void {
     try {
+      console.log('=== STORING LOCATION ===');
+      console.log('Location to store:', location);
       localStorage.setItem(this.LOCATION_STORAGE_KEY, JSON.stringify(location));
+      console.log('Stored successfully. Checking retrieval...');
+      const retrieved = localStorage.getItem(this.LOCATION_STORAGE_KEY);
+      console.log('Retrieved from storage:', retrieved);
     } catch (error) {
       console.error('Error storing location:', error);
     }

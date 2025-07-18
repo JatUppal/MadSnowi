@@ -41,6 +41,12 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
       console.log('Route Destination:', locationContext.routeDestinationLocation);
       console.log('Has Any Location Data:', LocationService.hasAnyLocationData());
       
+      // Debug localStorage directly
+      console.log('=== DEBUGGING LOCATION STORAGE ===');
+      console.log('localStorage user_last_location:', localStorage.getItem('user_last_location'));
+      console.log('localStorage route_start_location:', localStorage.getItem('route_start_location'));
+      console.log('localStorage route_destination_location:', localStorage.getItem('route_destination_location'));
+      
       const analysis = await aiService.analyzeHazardReport(input.trim(), locationContext);
 
       console.log('AI Analysis:', analysis);
@@ -71,9 +77,12 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
   };
 
   const handleLocationShare = async () => {
+    console.log('=== USER CLICKED SHARE LOCATION ===');
     setIsProcessing(true);
     try {
+      console.log('Requesting user location...');
       const userLocation = await LocationService.requestUserLocation();
+      console.log('Location request result:', userLocation);
       
       if (userLocation && pendingHazard) {
         console.log('=== USER SHARED LOCATION ===');
