@@ -9,7 +9,10 @@ import { LocationService, UserLocation } from '@/services/locationService';
 interface AIHazardInputProps {
   onHazardSubmit: (hazard: {
     text: string;
-    location?: { lat: number; lng: number; address?: string };
+    location?: { 
+      address?: string;
+      coordinates?: { lat: number; lng: number };
+    };
   }) => void;
 }
 
@@ -46,9 +49,11 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
         const hazardReport = {
           text: `${analysis.hazardType}: ${analysis.description}`,
           location: coordinates ? {
-            lat: coordinates.lat,
-            lng: coordinates.lng,
-            address: analysis.location?.address
+            address: analysis.location?.address,
+            coordinates: {
+              lat: coordinates.lat,
+              lng: coordinates.lng
+            }
           } : undefined
         };
 
@@ -71,9 +76,11 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
         const hazardReport = {
           text: `${pendingHazard.hazardType}: ${pendingHazard.description}`,
           location: {
-            lat: userLocation.lat,
-            lng: userLocation.lng,
-            address: userLocation.address || 'User location'
+            address: userLocation.address || 'User location',
+            coordinates: {
+              lat: userLocation.lat,
+              lng: userLocation.lng
+            }
           }
         };
 

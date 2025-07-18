@@ -3,16 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AIHazardInput } from './AIHazardInput';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HazardReport {
   id: string;
-  text: string;
-  timestamp: number;
-  location?: {
-    lat: number;
-    lng: number;
-    address?: string;
-  };
+  hazard_type: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  location_address?: string;
+  location_lat?: number;
+  location_lng?: number;
+  created_at: string;
 }
 
 const HazardReporterCard = () => {
@@ -23,19 +24,20 @@ const HazardReporterCard = () => {
   useEffect(() => {
     const loadHazards = async () => {
       try {
-        const response = await fetch('/api/hazard?latest=5');
-        if (response.ok) {
-          const data = await response.json();
-          setHazards(data);
+        const { data, error } = await supabase
+          .from('hazard_reports')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          console.error('Error loading hazards:', error);
+          return;
         }
+
+        setHazards((data || []) as HazardReport[]);
       } catch (error) {
         console.log('Could not load hazards:', error);
-        // For demo purposes, add some mock data
-        setHazards([
-          { id: '1', text: 'Ice patch on Highway 151 near Verona', timestamp: Date.now() - 1800000 },
-          { id: '2', text: 'Snow drift blocking right lane on I-94', timestamp: Date.now() - 3600000 },
-          { id: '3', text: 'Fallen tree on County Road M', timestamp: Date.now() - 5400000 },
-        ]);
       }
     };
 
@@ -49,45 +51,41 @@ const HazardReporterCard = () => {
   const submitHazard = async (hazardData: { text: string; location?: any }) => {
     setIsSubmitting(true);
     try {
-      const body = { 
-        text: hazardData.text, 
-        timestamp: Date.now(),
-        location: hazardData.location 
+      // Prepare data for database insertion
+      const insertData = {
+        hazard_type: hazardData.text.split(' ').slice(0, 5).join(' '), // First few words as type
+        description: hazardData.text,
+        severity: 'medium' as const, // Default severity
+        location_address: hazardData.location?.address,
+        location_lat: hazardData.location?.coordinates?.lat,
+        location_lng: hazardData.location?.coordinates?.lng,
+        user_id: (await supabase.auth.getUser()).data.user?.id || null,
       };
-      
-      const response = await fetch('/api/hazard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
 
-      if (response.ok) {
-        // Add to local state
-        const newHazard: HazardReport = {
-          id: Date.now().toString(),
-          text: hazardData.text,
-          timestamp: Date.now(),
-          location: hazardData.location
-        };
-        setHazards(prev => [newHazard, ...prev.slice(0, 4)]);
+      const { data, error } = await supabase
+        .from('hazard_reports')
+        .insert(insertData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error submitting hazard:', error);
+        return;
       }
+
+      // Add to local state for immediate UI update
+      setHazards(prev => [data as HazardReport, ...prev.slice(0, 4)]);
+      
     } catch (error) {
       console.log('Could not submit hazard report:', error);
-      // For demo, still add to local state
-      const newHazard: HazardReport = {
-        id: Date.now().toString(),
-        text: hazardData.text,
-        timestamp: Date.now(),
-        location: hazardData.location
-      };
-      setHazards(prev => [newHazard, ...prev.slice(0, 4)]);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const formatTimeAgo = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
     if (seconds < 60) return `${seconds} s ago`;
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} m ago`;
@@ -121,15 +119,15 @@ const HazardReporterCard = () => {
                 <span className="text-sm mt-0.5">❗</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground leading-tight">
-                    {hazard.text}
+                    {hazard.description}
                   </p>
-                  {hazard.location?.address && (
+                  {hazard.location_address && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      📍 {hazard.location.address}
+                      📍 {hazard.location_address}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatTimeAgo(hazard.timestamp)}
+                    {formatTimeAgo(hazard.created_at)}
                   </p>
                 </div>
               </div>
