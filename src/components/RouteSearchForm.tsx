@@ -107,7 +107,7 @@ const RouteSearchForm: React.FC<Props> = ({
           </div>
 
           {/* Travel Mode */}
-          <div className="space-y-2">
+          <div className="space-y-2 bg-sky-200">
             <Label>Travel Mode</Label>
             <Select value={formData.travelMode} onValueChange={(value: 'driving' | 'walking' | 'biking') => setFormData(prev => ({
             ...prev,
@@ -125,7 +125,7 @@ const RouteSearchForm: React.FC<Props> = ({
           </div>
 
           {/* Vehicle Info (only for driving) */}
-          {isDriving && <Card className="p-4 bg-accent/30 border-accent/50 rounded-xl">
+          {isDriving && <Card className="p-4 border-accent/50 rounded-xl bg-sky-100">
               <h3 className="font-semibold mb-3 text-foreground">Vehicle Information</h3>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
