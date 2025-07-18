@@ -147,9 +147,9 @@ const RouteResults: React.FC<RouteResultsProps> = ({
 
       {/* Winter Travel Tips */}
       <Card className="bg-accent/20 border-none shadow-none rounded-none">
-        <div className="p-4 text-center bg-sky-100">
+        <div className="p-4 text-left bg-sky-100">
           <h4 className="font-semibold mb-2 text-sm">🦡 Wisconsin Winter Tips</h4>
-          <ul className="text-xs text-muted-foreground space-y-1">
+          <ul className="text-sm text-muted-foreground space-y-1">
             <li>• Keep emergency kit: blanket, water, snacks, phone charger</li>
             <li>• Check 511WI.gov for real-time road conditions</li>
             <li>• Allow extra travel time in winter weather</li>
