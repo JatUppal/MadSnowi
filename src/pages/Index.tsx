@@ -70,11 +70,14 @@ const Index = () => {
   return <div className="min-h-screen bg-gradient-snow">
       <div className="container mx-auto px-4 py-8 bg-sky-100">
         {/* 2-Column Responsive Layout */}
-        <div className="grid lg:grid-cols-4 gap-6">
-          {/* Left Column (Wide) - 3/4 width */}
-          <div className="lg:col-span-3 space-y-6">
+        <div className="grid lg:grid-cols-[3fr_2fr] gap-6">
+          {/* Left Column (60% width) */}
+          <div className="space-y-6">
             {/* Route Input Form */}
             <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
+            
+            {/* Google Map Display */}
+            <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
             
             {/* Instructional Text */}
             <div className="text-center py-4">
@@ -82,13 +85,10 @@ const Index = () => {
                 {!searchData ? "Enter locations to see winter route analysis" : "Analyzing route safety with real-time weather data"}
               </p>
             </div>
-            
-            {/* Google Map Display */}
-            <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
           </div>
 
-          {/* Right Column (Narrow) - 1/4 width */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* Right Column (40% width) */}
+          <div className="space-y-6">
             {/* Weather Info Card */}
             <WeatherDashboard city="Madison" />
             
