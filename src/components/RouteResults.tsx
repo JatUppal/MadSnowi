@@ -3,7 +3,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Snowflake, Target, AlertTriangle } from 'lucide-react';
-
 interface RouteResultsProps {
   routeData?: {
     distance: string;
@@ -20,11 +19,12 @@ interface RouteResultsProps {
   };
   loading?: boolean;
 }
-
-const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
+const RouteResults: React.FC<RouteResultsProps> = ({
+  routeData,
+  loading
+}) => {
   if (loading) {
-    return (
-      <Card className="w-full bg-gradient-snow shadow-snow animate-pulse rounded-xl">
+    return <Card className="w-full bg-gradient-snow shadow-snow animate-pulse rounded-xl">
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-3">
             <Snowflake className="h-5 w-5 text-primary animate-spin" />
@@ -36,13 +36,10 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
             <div className="h-4 bg-muted rounded w-1/2 animate-pulse"></div>
           </div>
         </div>
-      </Card>
-    );
+      </Card>;
   }
-
   if (!routeData) {
-    return (
-      <Card className="w-full bg-gradient-winter shadow-snow h-[320px] flex items-center justify-center rounded-xl">
+    return <Card className="w-full bg-gradient-winter shadow-snow h-[320px] flex items-center justify-center rounded-xl">
         <div className="p-6 text-center">
           <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-muted-foreground">
@@ -52,30 +49,33 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
             Get snow depth, safety scores, and vehicle-specific recommendations
           </p>
         </div>
-      </Card>
-    );
+      </Card>;
   }
-
   const getSafetyBadgeVariant = (score: string) => {
     switch (score) {
-      case 'safe': return 'default';
-      case 'caution': return 'secondary';
-      case 'danger': return 'destructive';
-      default: return 'outline';
+      case 'safe':
+        return 'default';
+      case 'caution':
+        return 'secondary';
+      case 'danger':
+        return 'destructive';
+      default:
+        return 'outline';
     }
   };
-
   const getSafetyIcon = (score: string) => {
     switch (score) {
-      case 'safe': return '✅';
-      case 'caution': return '⚠️';
-      case 'danger': return '❌';
-      default: return '❓';
+      case 'safe':
+        return '✅';
+      case 'caution':
+        return '⚠️';
+      case 'danger':
+        return '❌';
+      default:
+        return '❓';
     }
   };
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       {/* Main Route Summary */}
       <Card className="bg-gradient-winter shadow-snow rounded-xl">
         <div className="p-6 space-y-4">
@@ -110,12 +110,10 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
                 <span className="text-muted-foreground">Temperature:</span>
                 <span className="font-semibold">{routeData.weatherConditions.temperature}°F</span>
               </div>
-              {routeData.weatherConditions.windChill && (
-                <div className="flex justify-between">
+              {routeData.weatherConditions.windChill && <div className="flex justify-between">
                   <span className="text-muted-foreground">Wind Chill:</span>
                   <span className="font-semibold">{routeData.weatherConditions.windChill}°F</span>
-                </div>
-              )}
+                </div>}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Conditions:</span>
                 <span className="font-semibold">{routeData.weatherConditions.conditions}</span>
@@ -136,18 +134,16 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
       </Card>
 
       {/* Recommendations */}
-      {routeData.safetyScore !== 'safe' && (
-        <Alert variant={routeData.safetyScore === 'danger' ? 'destructive' : 'default'}>
+      {routeData.safetyScore !== 'safe' && <Alert variant={routeData.safetyScore === 'danger' ? 'destructive' : 'default'}>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             <strong>Recommendation:</strong> {routeData.recommendation}
           </AlertDescription>
-        </Alert>
-      )}
+        </Alert>}
 
       {/* Winter Travel Tips */}
       <Card className="bg-accent/20 border-accent/50 rounded-xl">
-        <div className="p-4 text-center">
+        <div className="p-4 text-center bg-sky-100">
           <h4 className="font-semibold mb-2 text-sm">🦡 Wisconsin Winter Tips</h4>
           <ul className="text-xs text-muted-foreground space-y-1">
             <li>• Keep emergency kit: blanket, water, snacks, phone charger</li>
@@ -157,8 +153,6 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
           </ul>
         </div>
       </Card>
-    </div>
-  );
+    </div>;
 };
-
 export default RouteResults;
