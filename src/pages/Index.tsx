@@ -79,18 +79,19 @@ const Index = () => {
             {/* Google Map Display */}
             <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
             
-            {/* Instructional Text */}
-            <div className="text-center py-4">
-              <p className="text-lg text-muted-foreground">
-                {!searchData ? "Enter locations to see winter route analysis" : "Analyzing route safety with real-time weather data"}
-              </p>
-            </div>
           </div>
 
           {/* Right Column (40% width) */}
           <div className="space-y-6">
             {/* Weather Info Card */}
             <WeatherDashboard city="Madison" />
+            
+            {/* Instructional Text */}
+            <div className="text-center py-4">
+              <p className="text-lg text-muted-foreground">
+                {!searchData ? "Enter locations to see winter route analysis" : "Analyzing route safety with real-time weather data"}
+              </p>
+            </div>
             
             {/* Turn-by-Turn Directions Card */}
             <DirectionsBox routeData={routeData} startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} loading={loading} />
