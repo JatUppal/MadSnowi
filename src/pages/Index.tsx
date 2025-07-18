@@ -6,7 +6,6 @@ import WeatherDashboard from '@/components/WeatherDashboard';
 import HazardReporterCard from '@/components/HazardReporterCard';
 import DirectionsBox from '@/components/DirectionsBox';
 import { WeatherService } from '@/services/weatherService';
-
 interface RouteSearchData {
   startLocation: string;
   endLocation: string;
@@ -17,36 +16,24 @@ interface RouteSearchData {
     drive: 'fwd' | 'awd' | '4wd' | '';
   };
 }
-
 const Index = () => {
   const [routeData, setRouteData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [searchData, setSearchData] = useState<RouteSearchData | null>(null);
-
   const handleRouteSearch = async (data: RouteSearchData) => {
     setLoading(true);
     setSearchData(data);
-    
     try {
       const weatherService = WeatherService.getInstance();
-      
+
       // Get real route data from Google Maps
-      const routeData = await weatherService.getRouteData(
-        data.startLocation,
-        data.endLocation,
-        data.travelMode
-      );
-      
+      const routeData = await weatherService.getRouteData(data.startLocation, data.endLocation, data.travelMode);
+
       // Analyze route safety with real weather data
-      const safetyAnalysis = await weatherService.analyzeRouteWeather(
-        routeData.coordinates,
-        data.vehicleInfo,
-        data.travelMode
-      );
-      
+      const safetyAnalysis = await weatherService.analyzeRouteWeather(routeData.coordinates, data.vehicleInfo, data.travelMode);
+
       // Get weather for the general area
       const weatherData = await weatherService.getWeatherForCity('Madison');
-      
       const routeResults = {
         distance: routeData.distance,
         duration: routeData.duration,
@@ -60,7 +47,6 @@ const Index = () => {
           conditions: weatherData.weather[0].description
         }
       };
-      
       setRouteData(routeResults);
     } catch (error) {
       console.error('Error analyzing route:', error);
@@ -81,23 +67,16 @@ const Index = () => {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-snow">
-      <div className="container mx-auto px-4 py-8 space-y-1">
+  return <div className="min-h-screen bg-gradient-snow">
+      <div className="container mx-auto px-4 py-8 space-y-1 bg-sky-100">
         {/* Top Row: Route Search + Weather */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-6 bg-sky-100">
           <div className="lg:col-span-2 self-start">
             <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
           </div>
           <div className="space-y-5">
             <WeatherDashboard city="Madison" />
-            <DirectionsBox 
-              routeData={routeData}
-              startLocation={searchData?.startLocation}
-              endLocation={searchData?.endLocation}
-              loading={loading}
-            />
+            <DirectionsBox routeData={routeData} startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} loading={loading} />
           </div>
         </div>
 
@@ -105,12 +84,7 @@ const Index = () => {
         <div className="grid lg:grid-cols-3 gap-2">
           {/* Left: Map and Route Results */}
           <div className="lg:col-span-2 space-y-4">
-            <RouteMap 
-              startLocation={searchData?.startLocation}
-              endLocation={searchData?.endLocation}
-              travelMode={searchData?.travelMode}
-              routeData={routeData}
-            />
+            <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
             <RouteResults routeData={routeData} loading={loading} />
           </div>
           
@@ -121,13 +95,11 @@ const Index = () => {
         </div>
 
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground bg-card/30 rounded-lg p-4">
+        <div className="text-center text-sm text-muted-foreground rounded-lg p-4 bg-sky-100">
           <p>🧀 MadSnowi - Winter-Safe Route Planning for Wisconsin 🦡</p>
           <p className="mt-1">Stay safe, Go Badgers! Data from OpenWeatherMap & 511WI</p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

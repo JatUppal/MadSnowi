@@ -82,13 +82,13 @@ const RouteSearchForm: React.FC<Props> = ({
       </Card>;
   }
   return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
-      <div className="p-6 space-y-6 h-full flex flex-col justify-between">
+      <div className="p-6 space-y-6 h-full flex flex-col justify-between bg-sky-200 px-[24px] py-[24px] mx-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
+          <div className="p-2 rounded-lg bg-slate-50">
             <Snowflake className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">MadSnowi</h1>
+            <h1 className="text-2xl font-bold text-red-500">MadSnowi</h1>
             <p className="text-sm text-muted-foreground">AI Winter-Safe Route Planner for Wisconsin</p>
           </div>
         </div>
@@ -189,7 +189,7 @@ const RouteSearchForm: React.FC<Props> = ({
               </div>
             </Card>}
 
-          <Button type="submit" variant="winter" className="w-full" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode}>
+          <Button type="submit" variant="winter" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode} className="w-full text-base text-red-500 bg-zinc-100">
             {loading ? <>
                 <Snowflake className="mr-2 h-4 w-4 animate-spin" />
                 Finding Safe Route...
