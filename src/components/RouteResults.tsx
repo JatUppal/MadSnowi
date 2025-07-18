@@ -18,10 +18,12 @@ interface RouteResultsProps {
     };
   };
   loading?: boolean;
+  travelMode?: 'driving' | 'walking' | 'biking' | '';
 }
 const RouteResults: React.FC<RouteResultsProps> = ({
   routeData,
-  loading
+  loading,
+  travelMode
 }) => {
   if (loading) {
     return <Card className="w-full bg-gradient-snow shadow-snow animate-pulse rounded-xl">
@@ -123,15 +125,17 @@ const RouteResults: React.FC<RouteResultsProps> = ({
         </div>
       </Card>
 
-      {/* Vehicle Safety Assessment */}
-      <Card className="bg-card/50 backdrop-blur-sm shadow-snow rounded-xl">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-            🚗 Vehicle Safety Assessment
-          </h3>
-          <p className="text-foreground">{routeData.vehicleSafety}</p>
-        </div>
-      </Card>
+      {/* Vehicle Safety Assessment - Only show for non-walking modes */}
+      {travelMode !== 'walking' && (
+        <Card className="bg-card/50 backdrop-blur-sm shadow-snow rounded-xl">
+          <div className="p-6">
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+              🚗 Vehicle Safety Assessment
+            </h3>
+            <p className="text-foreground">{routeData.vehicleSafety}</p>
+          </div>
+        </Card>
+      )}
 
       {/* Recommendations */}
       {routeData.safetyScore !== 'safe' && <Alert variant={routeData.safetyScore === 'danger' ? 'destructive' : 'default'}>

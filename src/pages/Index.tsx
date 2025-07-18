@@ -108,7 +108,7 @@ const Index = () => {
         {/* Bottom Full-Width Horizontal Section */}
         {routeData && (
           <div className="rounded-xl">
-            <RouteResults routeData={routeData} loading={loading} />
+            <RouteResults routeData={routeData} loading={loading} travelMode={searchData?.travelMode} />
           </div>
         )}
 
