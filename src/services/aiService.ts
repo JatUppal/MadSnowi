@@ -221,13 +221,45 @@ export class AIService {
     
     const locationLower = location.toLowerCase();
     
-    // Basic location database for common places
-    const locationDatabase: Record<string, {lat: number, lng: number}> = {
-      'bellingham square park': { lat: 42.3868, lng: -71.0995 }, // Real Bellingham Square, Chelsea MA
-      'bellingham square': { lat: 42.3868, lng: -71.0995 },
-      'downtown': { lat: 37.7749, lng: -122.4194 },
-      'main street': { lat: 37.7849, lng: -122.4094 },
-      // Add more as needed
+    // Enhanced location database for common places
+    const locationDatabase: Record<string, {lat: number, lng: number, fullAddress: string}> = {
+      // Schools
+      'dougherty valley high school': { 
+        lat: 37.7184, lng: -121.8282, 
+        fullAddress: 'Dougherty Valley High School, 10550 Albion Rd, San Ramon, CA 94582' 
+      },
+      'san ramon valley high school': { 
+        lat: 37.7622, lng: -121.9444, 
+        fullAddress: 'San Ramon Valley High School, 501 Danville Blvd, Danville, CA 94526' 
+      },
+      'california high school': { 
+        lat: 37.7858, lng: -121.9247, 
+        fullAddress: 'California High School, 9870 Broadmoor Dr, San Ramon, CA 94583' 
+      },
+      
+      // Parks
+      'bellingham square park': { 
+        lat: 42.3868, lng: -71.0995, 
+        fullAddress: 'Bellingham Square Park, Chelsea, MA 02150' 
+      },
+      'central park': { 
+        lat: 37.7858, lng: -121.9747, 
+        fullAddress: 'Central Park, San Ramon, CA 94583' 
+      },
+      
+      // General areas
+      'downtown danville': { 
+        lat: 37.8217, lng: -121.9999, 
+        fullAddress: 'Downtown Danville, CA' 
+      },
+      'san ramon': { 
+        lat: 37.7799, lng: -121.9780, 
+        fullAddress: 'San Ramon, CA' 
+      },
+      'danville': { 
+        lat: 37.8217, lng: -121.9999, 
+        fullAddress: 'Danville, CA' 
+      }
     };
     
     // Check if we have a direct match
@@ -275,6 +307,18 @@ export class AIService {
         addressInfo.city = 'Chelsea';
         addressInfo.state = 'Massachusetts';
         addressInfo.zip = '02150';
+        addressInfo.country = 'United States';
+      } else if (Math.abs(coordinates.lat - 37.7184) < 0.01 && Math.abs(coordinates.lng - (-121.8282)) < 0.01) {
+        addressInfo.formatted_address = 'Dougherty Valley High School, 10550 Albion Rd, San Ramon, CA 94582';
+        addressInfo.city = 'San Ramon';
+        addressInfo.state = 'California';
+        addressInfo.zip = '94582';
+        addressInfo.country = 'United States';
+      } else if (Math.abs(coordinates.lat - 37.7858) < 0.01 && Math.abs(coordinates.lng - (-121.9247)) < 0.01) {
+        addressInfo.formatted_address = 'California High School, 9870 Broadmoor Dr, San Ramon, CA 94583';
+        addressInfo.city = 'San Ramon';
+        addressInfo.state = 'California';
+        addressInfo.zip = '94583';
         addressInfo.country = 'United States';
       }
       
