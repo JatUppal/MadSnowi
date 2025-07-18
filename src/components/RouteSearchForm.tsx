@@ -98,11 +98,11 @@ const RouteSearchForm: React.FC<Props> = ({
           <div className="grid md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start">🧀 Start Location</Label>
-              <PlacesAutocompleteInput defaultValue={formData.startLocation} onSelect={address => handleStartLocationChange(address)} placeholder="Enter starting point (e.g., UW-Madison)" className="bg-card/50 backdrop-blur-sm" />
+              <PlacesAutocompleteInput defaultValue={formData.startLocation} onSelect={address => handleStartLocationChange(address)} placeholder="Enter starting point (e.g., UW-Madison)" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="end">🎯 Destination</Label>
-              <PlacesAutocompleteInput defaultValue={formData.endLocation} onSelect={address => handleEndLocationChange(address)} placeholder="Enter destination" className="bg-card/50 backdrop-blur-sm" />
+              <PlacesAutocompleteInput defaultValue={formData.endLocation} onSelect={address => handleEndLocationChange(address)} placeholder="Enter destination" />
             </div>
           </div>
 
@@ -113,7 +113,7 @@ const RouteSearchForm: React.FC<Props> = ({
             ...prev,
             travelMode: value
           }))}>
-              <SelectTrigger className="bg-card/50 backdrop-blur-sm">
+              <SelectTrigger className="bg-white border border-gray-300 text-gray-800 shadow-sm rounded-md">
                 <SelectValue placeholder="Select how you'll travel" />
               </SelectTrigger>
               <SelectContent>
@@ -189,7 +189,7 @@ const RouteSearchForm: React.FC<Props> = ({
               </div>
             </Card>}
 
-          <Button type="submit" variant="winter" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode} className="w-full text-base text-red-500 bg-zinc-100">
+          <Button type="submit" disabled={loading || !formData.startLocation || !formData.endLocation || !formData.travelMode} className="w-full text-base !bg-white text-red-500 disabled:!bg-white disabled:text-red-500 border border-gray-300 hover:!bg-gray-50">
             {loading ? <>
                 <Snowflake className="mr-2 h-4 w-4 animate-spin" />
                 Finding Safe Route...

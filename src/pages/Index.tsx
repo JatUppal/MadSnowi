@@ -67,14 +67,14 @@ const Index = () => {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen bg-gradient-snow">
+  return <div className="min-h-screen bg-sky-100">
       <div className="container mx-auto px-4 py-8 bg-sky-100">
         {/* Upside-down T Layout: Two columns at top, full-width section below */}
         
         {/* Top Section: Left + Right Columns */}
         <div className="grid lg:grid-cols-[65fr_35fr] gap-6 mb-6">
           {/* Left Column (65% width) */}
-          <div className="flex flex-col space-y-6 h-full">
+          <div className="flex flex-col space-y-6 h-full bg-sky-100 p-4 rounded-xl">
             {/* MadSnowi Header + Route Input Form */}
             <div className="rounded-xl">
               <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
@@ -87,7 +87,7 @@ const Index = () => {
           </div>
 
           {/* Right Column (35% width) */}
-          <div className="space-y-6">
+          <div className="space-y-6 bg-sky-100 p-4 rounded-xl">
             {/* Weather Box (Blackhawk Weather) */}
             <div className="rounded-xl">
               <WeatherDashboard city="Madison" />
