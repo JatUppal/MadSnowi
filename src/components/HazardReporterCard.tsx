@@ -85,7 +85,7 @@ const HazardReporterCard = () => {
   };
 
   return (
-    <Card className="bg-gradient-winter shadow-snow border-accent/30">
+    <Card className="bg-gradient-winter shadow-snow border-accent/30 rounded-xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           🚧 Live Hazard Reports
@@ -121,7 +121,7 @@ const HazardReporterCard = () => {
             hazards.map((hazard) => (
               <div
                 key={hazard.id}
-                className="flex items-start gap-2 p-2 rounded bg-background/30 border border-accent/20"
+                className="flex items-start gap-2 p-2 rounded-xl bg-background/30 border border-accent/20"
               >
                 <span className="text-sm mt-0.5">❗</span>
                 <div className="flex-1 min-w-0">

@@ -43,7 +43,7 @@ const WeatherDashboard: React.FC<WeatherDashboardProps> = ({
     fetchWeather();
   }, [city]);
   if (loading) {
-    return <Card className="bg-gradient-ice shadow-snow animate-pulse">
+    return <Card className="bg-gradient-ice shadow-snow animate-pulse rounded-xl">
         <div className="p-4 space-y-3">
           <div className="h-4 bg-muted rounded animate-pulse"></div>
           <div className="h-6 bg-muted rounded w-3/4 animate-pulse"></div>
@@ -52,7 +52,7 @@ const WeatherDashboard: React.FC<WeatherDashboardProps> = ({
       </Card>;
   }
   if (!weatherData) {
-    return <Card className="bg-gradient-ice shadow-snow">
+    return <Card className="bg-gradient-ice shadow-snow rounded-xl">
         <div className="p-4 text-center">
           <Snowflake className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">No weather data available</p>
@@ -64,7 +64,7 @@ const WeatherDashboard: React.FC<WeatherDashboardProps> = ({
     if (depth > 3) return 'text-winter-caution';
     return 'text-winter-safe';
   };
-  return <Card className="bg-gradient-ice shadow-snow border-accent/30">
+  return <Card className="bg-gradient-ice shadow-snow border-accent/30 rounded-xl">
       <div className="p-4 space-y-4 bg-sky-200">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg">🦡 {weatherData.name} Weather</h3>
@@ -108,7 +108,7 @@ const WeatherDashboard: React.FC<WeatherDashboardProps> = ({
           </div>}
 
         {/* Winter travel alert */}
-        {weatherData.snow_depth > 3 && <div className="mt-3 p-2 bg-winter-caution/10 border border-winter-caution/30 rounded-md">
+        {weatherData.snow_depth > 3 && <div className="mt-3 p-2 bg-winter-caution/10 border border-winter-caution/30 rounded-xl">
             <p className="text-xs text-winter-caution font-medium">
               ⚠️ Significant snow accumulation - Use caution when traveling
             </p>

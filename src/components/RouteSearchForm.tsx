@@ -74,17 +74,17 @@ const RouteSearchForm: React.FC<Props> = ({
   };
   const isDriving = formData.travelMode === 'driving';
   if (!isLoaded) {
-    return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
+    return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0 rounded-xl">
         <div className="p-6 flex items-center justify-center">
           <Snowflake className="h-6 w-6 animate-spin text-primary mr-2" />
           <span className="text-foreground">Loading Google Maps...</span>
         </div>
       </Card>;
   }
-  return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
+  return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0 rounded-xl">
       <div className="space-y-6 h-full flex flex-col justify-between bg-sky-200 px-[24px] pb-[24px] pt-[12px] mx-0">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-slate-50">
+          <div className="p-2 rounded-xl bg-slate-50">
             <Snowflake className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -125,7 +125,7 @@ const RouteSearchForm: React.FC<Props> = ({
           </div>
 
           {/* Vehicle Info (only for driving) */}
-          {isDriving && <Card className="p-4 bg-accent/30 border-accent/50">
+          {isDriving && <Card className="p-4 bg-accent/30 border-accent/50 rounded-xl">
               <h3 className="font-semibold mb-3 text-foreground">Vehicle Information</h3>
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">

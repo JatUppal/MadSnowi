@@ -27,7 +27,7 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
 
   if (loading) {
     return (
-      <Card className="bg-gradient-winter shadow-snow">
+      <Card className="bg-gradient-winter shadow-snow rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Navigation className="h-5 w-5 animate-spin" />
@@ -50,7 +50,7 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
 
   if (!startLocation || !endLocation) {
     return (
-      <Card className="bg-gradient-winter shadow-snow h-[280px]">
+      <Card className="bg-gradient-winter shadow-snow h-[280px] rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Navigation className="h-5 w-5 text-muted-foreground" />
@@ -70,7 +70,7 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
   }
 
   return (
-    <Card className="bg-gradient-winter shadow-snow h-[320px]">
+    <Card className="bg-gradient-winter shadow-snow h-[320px] rounded-xl">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
           <Navigation className="h-5 w-5 text-primary" />
@@ -91,7 +91,7 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
           {mockDirections.map((step, index) => (
             <div
               key={index}
-              className="flex items-start gap-3 p-2 rounded bg-background/30 border border-accent/20"
+              className="flex items-start gap-3 p-2 rounded-xl bg-background/30 border border-accent/20"
             >
               <div className="flex-shrink-0 w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center text-xs font-semibold">
                 {step.icon}

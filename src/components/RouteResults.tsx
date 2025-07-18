@@ -24,7 +24,7 @@ interface RouteResultsProps {
 const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
   if (loading) {
     return (
-      <Card className="w-full bg-gradient-snow shadow-snow animate-pulse">
+      <Card className="w-full bg-gradient-snow shadow-snow animate-pulse rounded-xl">
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-3">
             <Snowflake className="h-5 w-5 text-primary animate-spin" />
@@ -42,7 +42,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
 
   if (!routeData) {
     return (
-      <Card className="w-full bg-gradient-winter shadow-snow h-[320px] flex items-center justify-center">
+      <Card className="w-full bg-gradient-winter shadow-snow h-[320px] flex items-center justify-center rounded-xl">
         <div className="p-6 text-center">
           <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-muted-foreground">
@@ -77,7 +77,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
   return (
     <div className="space-y-4">
       {/* Main Route Summary */}
-      <Card className="bg-gradient-winter shadow-snow">
+      <Card className="bg-gradient-winter shadow-snow rounded-xl">
         <div className="p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">Route Analysis</h2>
@@ -126,7 +126,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
       </Card>
 
       {/* Vehicle Safety Assessment */}
-      <Card className="bg-card/50 backdrop-blur-sm shadow-snow">
+      <Card className="bg-card/50 backdrop-blur-sm shadow-snow rounded-xl">
         <div className="p-6">
           <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
             🚗 Vehicle Safety Assessment
@@ -146,7 +146,7 @@ const RouteResults: React.FC<RouteResultsProps> = ({ routeData, loading }) => {
       )}
 
       {/* Winter Travel Tips */}
-      <Card className="bg-accent/20 border-accent/50">
+      <Card className="bg-accent/20 border-accent/50 rounded-xl">
         <div className="p-4 text-center">
           <h4 className="font-semibold mb-2 text-sm">🦡 Wisconsin Winter Tips</h4>
           <ul className="text-xs text-muted-foreground space-y-1">

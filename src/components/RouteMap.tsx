@@ -64,7 +64,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
     console.warn('Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY environment variable.');
     console.log("❌ API Key validation failed:", { apiKey, hasApiKey: !!apiKey, isPlaceholder: apiKey === 'your_actual_google_maps_api_key_here' });
     return (
-      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow">
+      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow rounded-xl">
         <div className="text-center space-y-4">
           <AlertDescription className="text-red-600">
             Google Maps API key not configured. Please set VITE_GOOGLE_MAPS_API_KEY environment variable.
@@ -111,7 +111,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
 
   if (error) {
     return (
-      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow">
+      <Card className="w-full h-96 flex items-center justify-center bg-gradient-winter shadow-snow rounded-xl">
         <div className="text-center space-y-4">
           <AlertDescription className="text-red-600">{error}</AlertDescription>
           <p className="text-sm text-muted-foreground">
@@ -123,7 +123,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   }
 
   return (
-    <Card className="w-full h-full overflow-hidden shadow-ice bg-gradient-winter">
+    <Card className="w-full h-full overflow-hidden shadow-ice bg-gradient-winter rounded-xl">
       <div className="relative w-full h-full" style={{ height: '100%' }}>
         <LoadScript
           googleMapsApiKey={apiKey || ''}
@@ -207,12 +207,12 @@ const RouteMap: React.FC<RouteMapProps> = ({
           </div>
         )}
         {/* Winter overlay info */}
-        <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-2">
+        <div className="absolute top-4 left-4 bg-card/90 backdrop-blur-sm rounded-xl p-2">
           <div className="text-xs font-medium">🦡 Madison Winter Routes</div>
         </div>
         {/* Route info overlay */}
         {showRoute && !loading && (
-          <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-lg p-2">
+          <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm rounded-xl p-2">
             <div className="text-xs space-y-1">
               <div>🧀 {startLocation}</div>
               <div>🎯 {endLocation}</div>
