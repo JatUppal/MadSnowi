@@ -65,7 +65,7 @@ const WeatherDashboard: React.FC<WeatherDashboardProps> = ({
     return 'text-winter-safe';
   };
   return <Card className="bg-gradient-ice shadow-snow border-accent/30 rounded-xl">
-      <div className="p-4 space-y-4 bg-sky-200">
+      <div className="p-4 space-y-4 bg-sky-200 rounded-xl">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-lg">🦡 {weatherData.name} Weather</h3>
           <Badge variant="outline" className="text-xs">
