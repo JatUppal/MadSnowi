@@ -85,21 +85,19 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-snow">
       <div className="container mx-auto px-4 py-8 space-y-1">
-        {/* Top Row: Route Search + Weather */}
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 self-start">
-            <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
-          </div>
-          <div className="space-y-5">
-            <WeatherDashboard city="Madison" />
-            <DirectionsBox 
-              routeData={routeData}
-              startLocation={searchData?.startLocation}
-              endLocation={searchData?.endLocation}
-              loading={loading}
-            />
-          </div>
-        </div>
+        {/* Route Search Form */}
+        <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
+        
+        {/* Weather Dashboard */}
+        <WeatherDashboard city="Madison" />
+        
+        {/* Directions Box */}
+        <DirectionsBox 
+          routeData={routeData}
+          startLocation={searchData?.startLocation}
+          endLocation={searchData?.endLocation}
+          loading={loading}
+        />
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-2">
