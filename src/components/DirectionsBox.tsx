@@ -16,14 +16,18 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
   endLocation,
   loading
 }) => {
-  // Mock directions data for demonstration
-  const mockDirections = [
-    { instruction: "Head north on University Ave", distance: "0.3 mi", icon: "↑" },
-    { instruction: "Turn right onto State St", distance: "0.7 mi", icon: "→" },
-    { instruction: "Continue onto E Washington Ave", distance: "1.2 mi", icon: "↑" },
-    { instruction: "Turn left onto Blair St", distance: "0.5 mi", icon: "←" },
-    { instruction: "Destination will be on your right", distance: "", icon: "📍" }
-  ];
+  // Get maneuver icon based on instruction content
+  const getManeuverIcon = (instruction: string, maneuver?: string) => {
+    if (instruction.toLowerCase().includes('destination')) return '📍';
+    if (maneuver === 'turn-right' || instruction.toLowerCase().includes('turn right')) return '→';
+    if (maneuver === 'turn-left' || instruction.toLowerCase().includes('turn left')) return '←';
+    if (maneuver === 'straight' || instruction.toLowerCase().includes('continue')) return '↑';
+    if (instruction.toLowerCase().includes('merge')) return '↗';
+    if (instruction.toLowerCase().includes('exit')) return '↘';
+    return '↑'; // default
+  };
+
+  const directions = routeData?.steps || [];
 
   if (loading) {
     return (
@@ -88,13 +92,13 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
       </CardHeader>
       <CardContent className="h-full overflow-hidden">
         <div className="space-y-3 max-h-52 overflow-y-auto">
-          {mockDirections.map((step, index) => (
+          {directions.length > 0 ? directions.map((step: any, index: number) => (
             <div
               key={index}
               className="flex items-start gap-3 p-2 rounded-xl bg-background/30 border border-accent/20"
             >
               <div className="flex-shrink-0 w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center text-xs font-semibold">
-                {step.icon}
+                {getManeuverIcon(step.instruction, step.maneuver)}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground leading-tight">
@@ -107,7 +111,13 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
                 )}
               </div>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-4">
+              <p className="text-sm text-muted-foreground">
+                No directions available
+              </p>
+            </div>
+          )}
         </div>
         
       </CardContent>

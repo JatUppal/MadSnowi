@@ -51,12 +51,21 @@ serve(async (req) => {
       lng: leg.end_location.lng
     });
 
+    // Extract turn-by-turn directions
+    const steps = leg.steps.map(step => ({
+      instruction: step.html_instructions.replace(/<[^>]*>/g, ''), // Remove HTML tags
+      distance: step.distance.text,
+      duration: step.duration.text,
+      maneuver: step.maneuver || 'straight'
+    }));
+
     return new Response(JSON.stringify({
       route: {
         distance: leg.distance.text,
         duration: leg.duration.text,
         coordinates,
-        polyline: route.overview_polyline.points
+        polyline: route.overview_polyline.points,
+        steps
       }
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
