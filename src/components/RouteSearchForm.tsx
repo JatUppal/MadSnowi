@@ -82,7 +82,7 @@ const RouteSearchForm: React.FC<Props> = ({
       </Card>;
   }
   return <Card className="w-full max-w-4xl mx-auto bg-gradient-winter shadow-snow border-0">
-      <div className="p-6 space-y-6 h-full flex flex-col justify-between bg-sky-200 px-[24px] py-[24px] mx-0">
+      <div className="space-y-6 h-full flex flex-col justify-between bg-sky-200 px-[24px] pb-[24px] pt-[12px] mx-0">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-slate-50">
             <Snowflake className="h-6 w-6 text-primary" />
