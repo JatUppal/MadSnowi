@@ -68,34 +68,47 @@ const Index = () => {
     }
   };
   return <div className="min-h-screen bg-gradient-snow">
-      <div className="container mx-auto px-4 py-8 space-y-1 bg-sky-100">
-        {/* Top Row: Route Search + Weather */}
-        <div className="grid lg:grid-cols-3 gap-6 bg-sky-100">
-          <div className="lg:col-span-2 self-start">
+      <div className="container mx-auto px-4 py-8 bg-sky-100">
+        {/* 2-Column Responsive Layout */}
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Left Column (Wide) - 3/4 width */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Route Input Form */}
             <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
-          </div>
-          <div className="space-y-5">
-            <WeatherDashboard city="Madison" />
-            <DirectionsBox routeData={routeData} startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} loading={loading} />
-          </div>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-3 gap-2">
-          {/* Left: Map and Route Results */}
-          <div className="lg:col-span-2 space-y-4">
+            
+            {/* Instructional Text */}
+            <div className="text-center py-4">
+              <p className="text-lg text-muted-foreground">
+                {!searchData ? "Enter locations to see winter route analysis" : "Analyzing route safety with real-time weather data"}
+              </p>
+            </div>
+            
+            {/* Google Map Display */}
             <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
-            <RouteResults routeData={routeData} loading={loading} />
           </div>
-          
-          {/* Right: Hazard Reports Only */}
-          <div>
+
+          {/* Right Column (Narrow) - 1/4 width */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Weather Info Card */}
+            <WeatherDashboard city="Madison" />
+            
+            {/* Turn-by-Turn Directions Card */}
+            <DirectionsBox routeData={routeData} startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} loading={loading} />
+            
+            {/* Live Hazard Reports */}
             <HazardReporterCard />
           </div>
         </div>
 
+        {/* Route Results (moved below map for better flow) */}
+        {routeData && (
+          <div className="mt-6">
+            <RouteResults routeData={routeData} loading={loading} />
+          </div>
+        )}
+
         {/* Footer */}
-        <div className="text-center text-sm text-muted-foreground rounded-lg p-4 bg-sky-100">
+        <div className="text-center text-sm text-muted-foreground rounded-lg p-4 bg-sky-100 mt-8">
           <p>🧀 MadSnowi - Winter-Safe Route Planning for Wisconsin 🦡</p>
           <p className="mt-1">Stay safe, Go Badgers! Data from OpenWeatherMap & 511WI</p>
         </div>
