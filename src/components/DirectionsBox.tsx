@@ -28,6 +28,8 @@ const DirectionsBox: React.FC<DirectionsBoxProps> = ({
   };
 
   const directions = routeData?.steps || [];
+  console.log('DirectionsBox - routeData:', routeData);
+  console.log('DirectionsBox - directions:', directions);
 
   if (loading) {
     return (

@@ -59,6 +59,9 @@ serve(async (req) => {
       maneuver: step.maneuver || 'straight'
     }));
 
+    console.log('Extracted steps:', steps.length, 'total steps');
+    console.log('First step:', steps[0]);
+
     return new Response(JSON.stringify({
       route: {
         distance: leg.distance.text,
