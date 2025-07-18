@@ -89,25 +89,34 @@ Your task is to:
 2. Use ALL available context to make an educated guess about location
 3. Only ask for user location if you genuinely cannot make a reasonable guess
 
-LOCATION INFERENCE RULES:
-• If user says "here", "where I am", "at my location" → Use last known location
-• If user says "ahead", "behind", "up the road" → Infer direction from route context
-• If user mentions road names → Cross-reference with their known locations
-• If user is on a planned route → Hazard is likely somewhere along that path
-• If no specific location mentioned but context exists → Make best educated guess
-• If user says general area (like "downtown", "near the mall") → Combine with their context
+LOCATION INFERENCE PRIORITY (CRITICAL):
+1. **FIRST PRIORITY**: Extract specific location from user text
+   • "bellingham square park" → Find bellingham square park coordinates using geocoding
+   • "Highway 101" → Find Highway 101 in user's area  
+   • "downtown" → Find downtown relative to user's known locations
+   • "Main Street" → Find Main Street near user's context
 
-CONFIDENCE LEVELS:
-• HIGH: Specific location mentioned OR strong contextual inference
-• MEDIUM: General area mentioned OR moderate contextual inference  
-• LOW: Weak contextual clues OR ambiguous description
-• UNKNOWN: No useful information to make any location guess
+2. **USE CONTEXT TO NARROW DOWN**: Use user's location context to resolve ambiguity
+   • If user says "bellingham square park" → Find the one closest to user's known location
+   • Multiple matches exist → Pick closest to user's coordinates
+   • User context helps disambiguate common place names
+
+3. **DIRECTION/RELATIVE TERMS**: 
+   • "here" / "where I am" / "at my location" → Use exact user location
+   • "ahead" / "up the road" → Estimate along route direction from user location
+   • "near downtown" → Find downtown area relative to user's context
+
+4. **FALLBACK HIERARCHY**:
+   • Cannot find mentioned location → Use user's coordinates as fallback (LOW confidence)
+   • No location mentioned but have context → Use user location (MEDIUM confidence)  
+   • No location mentioned and no context → Ask for location
 
 WHEN TO ASK FOR LOCATION:
 Only set needsLocationConfirmation=true if:
 - No location mentioned in description AND
-- No useful context available to make even a rough guess AND
-- Cannot infer location from any available data
+- No user context available (no last known, no route data) AND  
+- Cannot make any reasonable location guess
+- If user has NO data at all, MUST prompt for location
 
 RESPONSE FORMAT (JSON only):
 {

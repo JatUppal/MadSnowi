@@ -51,6 +51,13 @@ export class AIService {
       
     } catch (error) {
       console.error('Failed to analyze hazard with AI:', error);
+      console.log('Attempting smart fallback analysis...');
+      
+      // Smart fallback: try to extract location from user input text
+      const inputLower = userInput.toLowerCase();
+      
+      // Check if user mentions a specific place
+      const hasSpecificLocation = /\b(park|street|road|avenue|highway|mall|downtown|square|plaza|center)\b/.test(inputLower);
       
       // Enhanced fallback: use location context if available
       const hasLocationData = locationContext?.lastKnownLocation || 
@@ -58,7 +65,24 @@ export class AIService {
                              locationContext?.routeDestinationLocation;
       
       let fallbackLocation = null;
-      if (locationContext?.lastKnownLocation) {
+      let needsConfirmation = true;
+      
+      if (hasSpecificLocation && hasLocationData) {
+        // User mentioned a specific place, but we couldn't geocode it with AI
+        // Use their location as a fallback but mark it as low confidence
+        fallbackLocation = {
+          address: `Near ${userInput.match(/\b\w+\s+(park|street|road|avenue|highway|mall|downtown|square|plaza|center)\b/i)?.[0] || 'mentioned location'} (estimated near user location)`,
+          coordinates: {
+            lat: locationContext.lastKnownLocation?.lat || locationContext.routeStartLocation?.lat || locationContext.routeDestinationLocation?.lat,
+            lng: locationContext.lastKnownLocation?.lng || locationContext.routeStartLocation?.lng || locationContext.routeDestinationLocation?.lng
+          },
+          confidence: 'low' as const,
+          source: 'fallback_estimated_near_user' as const
+        };
+        needsConfirmation = false; // Don't prompt since we have some context
+        console.log('Smart fallback: estimated location near user for mentioned place');
+      } else if (locationContext?.lastKnownLocation) {
+        // No specific location mentioned, use user's location directly
         fallbackLocation = {
           address: locationContext.lastKnownLocation.address || 'User location',
           coordinates: {
@@ -66,17 +90,23 @@ export class AIService {
             lng: locationContext.lastKnownLocation.lng
           },
           confidence: 'medium' as const,
-          source: 'fallback_last_known' as const
+          source: 'fallback_user_location' as const
         };
+        needsConfirmation = false;
+        console.log('Smart fallback: using user location');
+      } else {
+        // No location data available - must prompt
+        needsConfirmation = true;
+        console.log('Smart fallback: no location data, will prompt user');
       }
       
-      // Fallback to basic analysis with available location context
+      // Fallback analysis with smart location handling
       return {
         hazardType: 'Road hazard reported',
         description: userInput,
         location: fallbackLocation,
         severity: 'medium',
-        needsLocationConfirmation: !hasLocationData // Only ask if no location data available
+        needsLocationConfirmation: needsConfirmation
       };
     }
   }
