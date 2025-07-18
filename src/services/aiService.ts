@@ -52,13 +52,31 @@ export class AIService {
     } catch (error) {
       console.error('Failed to analyze hazard with AI:', error);
       
-      // Fallback to basic analysis if AI service fails
+      // Enhanced fallback: use location context if available
+      const hasLocationData = locationContext?.lastKnownLocation || 
+                             locationContext?.routeStartLocation || 
+                             locationContext?.routeDestinationLocation;
+      
+      let fallbackLocation = null;
+      if (locationContext?.lastKnownLocation) {
+        fallbackLocation = {
+          address: locationContext.lastKnownLocation.address || 'User location',
+          coordinates: {
+            lat: locationContext.lastKnownLocation.lat,
+            lng: locationContext.lastKnownLocation.lng
+          },
+          confidence: 'medium' as const,
+          source: 'fallback_last_known' as const
+        };
+      }
+      
+      // Fallback to basic analysis with available location context
       return {
         hazardType: 'Road hazard reported',
         description: userInput,
-        location: null,
+        location: fallbackLocation,
         severity: 'medium',
-        needsLocationConfirmation: true
+        needsLocationConfirmation: !hasLocationData // Only ask if no location data available
       };
     }
   }
