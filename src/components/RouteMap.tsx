@@ -123,7 +123,7 @@ const RouteMap: React.FC<RouteMapProps> = ({
   }
 
   return (
-    <Card className="w-full h-96 overflow-hidden shadow-ice bg-gradient-winter">
+    <Card className="w-full h-full overflow-hidden shadow-ice bg-gradient-winter">
       <div className="relative w-full h-full" style={{ height: '100%' }}>
         <LoadScript
           googleMapsApiKey={apiKey || ''}

@@ -74,14 +74,14 @@ const Index = () => {
         {/* Top Section: Left + Right Columns */}
         <div className="grid lg:grid-cols-[65fr_35fr] gap-6 mb-6">
           {/* Left Column (65% width) */}
-          <div className="space-y-6">
+          <div className="flex flex-col space-y-6 h-full">
             {/* MadSnowi Header + Route Input Form */}
             <div className="rounded-xl">
               <RouteSearchForm onSearch={handleRouteSearch} loading={loading} />
             </div>
             
             {/* Google Map Display */}
-            <div className="rounded-xl overflow-hidden">
+            <div className="rounded-xl overflow-hidden flex-1">
               <RouteMap startLocation={searchData?.startLocation} endLocation={searchData?.endLocation} travelMode={searchData?.travelMode} routeData={routeData} />
             </div>
           </div>
