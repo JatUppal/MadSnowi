@@ -6,6 +6,7 @@ import WeatherDashboard from '@/components/WeatherDashboard';
 import HazardReporterCard from '@/components/HazardReporterCard';
 import DirectionsBox from '@/components/DirectionsBox';
 import { WeatherService } from '@/services/weatherService';
+import { LocationService } from '@/services/locationService';
 interface RouteSearchData {
   startLocation: string;
   endLocation: string;
@@ -28,6 +29,34 @@ const Index = () => {
 
       // Get real route data from Google Maps
       const routeData = await weatherService.getRouteData(data.startLocation, data.endLocation, data.travelMode);
+
+      // 🎯 STORE ROUTE LOCATIONS FOR AI USE
+      // We'll geocode the start and end locations to get coordinates
+      try {
+        // Use the first coordinate as start and last as end from the route
+        if (routeData.coordinates && routeData.coordinates.length > 0) {
+          const startCoord = routeData.coordinates[0];
+          const endCoord = routeData.coordinates[routeData.coordinates.length - 1];
+          
+          LocationService.storeRouteStartLocation({
+            lat: startCoord.lat,
+            lng: startCoord.lng,
+            address: data.startLocation,
+            timestamp: Date.now()
+          });
+          console.log('🎯 Route start location stored for AI:', data.startLocation);
+          
+          LocationService.storeRouteDestinationLocation({
+            lat: endCoord.lat,
+            lng: endCoord.lng,
+            address: data.endLocation,
+            timestamp: Date.now()
+          });
+          console.log('🎯 Route destination stored for AI:', data.endLocation);
+        }
+      } catch (error) {
+        console.log('Could not store route locations:', error);
+      }
 
       // Analyze route safety with real weather data
       const safetyAnalysis = await weatherService.analyzeRouteWeather(routeData.coordinates, data.vehicleInfo, data.travelMode);

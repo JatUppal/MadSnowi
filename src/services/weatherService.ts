@@ -1,5 +1,6 @@
 // Weather service for MadSnowi winter route planning
 import { supabase } from '@/integrations/supabase/client';
+import { LocationService } from './locationService';
 
 interface WeatherData {
   name: string;
@@ -302,6 +303,19 @@ export class WeatherService {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           console.log('Geolocation successful:', position.coords);
+          
+          // 🎯 AUTOMATICALLY STORE LOCATION FOR AI USE
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            address: `Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`,
+            timestamp: Date.now()
+          };
+          
+          // Store immediately for AI hazard reporting
+          LocationService.storeLastKnownLocation(userLocation);
+          console.log('🎯 Location automatically stored for AI use:', userLocation);
+          
           resolve({
             lat: position.coords.latitude,
             lng: position.coords.longitude
