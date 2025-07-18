@@ -2,17 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AIHazardInput } from './AIHazardInput';
 
 interface HazardReport {
   id: string;
   text: string;
   timestamp: number;
+  location?: {
+    lat: number;
+    lng: number;
+    address?: string;
+  };
 }
 
 const HazardReporterCard = () => {
   const [hazards, setHazards] = useState<HazardReport[]>([]);
   const [reportText, setReportText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [useAI, setUseAI] = useState(true);
 
   // Load initial hazards on mount
   useEffect(() => {
@@ -37,13 +44,26 @@ const HazardReporterCard = () => {
     loadHazards();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportText.trim() || isSubmitting) return;
 
+    submitHazard({ text: reportText.trim() });
+  };
+
+  const handleAISubmit = (hazardData: { text: string; location?: any }) => {
+    submitHazard(hazardData);
+  };
+
+  const submitHazard = async (hazardData: { text: string; location?: any }) => {
     setIsSubmitting(true);
     try {
-      const body = { text: reportText.trim(), timestamp: Date.now() };
+      const body = { 
+        text: hazardData.text, 
+        timestamp: Date.now(),
+        location: hazardData.location 
+      };
+      
       const response = await fetch('/api/hazard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -54,8 +74,9 @@ const HazardReporterCard = () => {
         // Add to local state
         const newHazard: HazardReport = {
           id: Date.now().toString(),
-          text: reportText.trim(),
-          timestamp: Date.now()
+          text: hazardData.text,
+          timestamp: Date.now(),
+          location: hazardData.location
         };
         setHazards(prev => [newHazard, ...prev.slice(0, 4)]);
         setReportText('');
@@ -65,8 +86,9 @@ const HazardReporterCard = () => {
       // For demo, still add to local state
       const newHazard: HazardReport = {
         id: Date.now().toString(),
-        text: reportText.trim(),
-        timestamp: Date.now()
+        text: hazardData.text,
+        timestamp: Date.now(),
+        location: hazardData.location
       };
       setHazards(prev => [newHazard, ...prev.slice(0, 4)]);
       setReportText('');
@@ -92,24 +114,48 @@ const HazardReporterCard = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Report submission form */}
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Textarea
-            value={reportText}
-            onChange={(e) => setReportText(e.target.value)}
-            placeholder="Spotted ice, snow drift, fallen tree…"
-            rows={2}
-            className="resize-none bg-background/50 border-accent/30"
-          />
-          <Button 
-            type="submit" 
-            size="sm" 
-            disabled={!reportText.trim() || isSubmitting}
-            className="bg-primary hover:bg-primary/90"
+        {/* AI/Manual Toggle */}
+        <div className="flex gap-2 mb-3">
+          <Button
+            size="sm"
+            variant={useAI ? "default" : "outline"}
+            onClick={() => setUseAI(true)}
+            className="text-xs"
           >
-            {isSubmitting ? 'Sending...' : 'Send'}
+            🤖 AI Assistant
           </Button>
-        </form>
+          <Button
+            size="sm"
+            variant={!useAI ? "default" : "outline"}
+            onClick={() => setUseAI(false)}
+            className="text-xs"
+          >
+            ✏️ Manual Entry
+          </Button>
+        </div>
+
+        {/* Report submission form */}
+        {useAI ? (
+          <AIHazardInput onHazardSubmit={handleAISubmit} />
+        ) : (
+          <form onSubmit={handleManualSubmit} className="space-y-3">
+            <Textarea
+              value={reportText}
+              onChange={(e) => setReportText(e.target.value)}
+              placeholder="Spotted ice, snow drift, fallen tree…"
+              rows={2}
+              className="resize-none bg-background/50 border-accent/30"
+            />
+            <Button 
+              type="submit" 
+              size="sm" 
+              disabled={!reportText.trim() || isSubmitting}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {isSubmitting ? 'Sending...' : 'Send'}
+            </Button>
+          </form>
+        )}
 
         {/* Recent hazards list */}
         <div className="max-h-40 overflow-y-auto space-y-2">
@@ -128,6 +174,11 @@ const HazardReporterCard = () => {
                   <p className="text-sm text-foreground leading-tight">
                     {hazard.text}
                   </p>
+                  {hazard.location?.address && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      📍 {hazard.location.address}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">
                     {formatTimeAgo(hazard.timestamp)}
                   </p>
