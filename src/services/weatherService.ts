@@ -30,6 +30,12 @@ interface RouteData {
   duration: string;
   coordinates: Array<{lat: number, lng: number}>;
   polyline: string;
+  steps?: Array<{
+    instruction: string;
+    distance: string;
+    duration: string;
+    maneuver: string;
+  }>;
 }
 
 export class WeatherService {

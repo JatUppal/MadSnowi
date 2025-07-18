@@ -41,6 +41,7 @@ const Index = () => {
         safetyScore: safetyAnalysis.overallSafety,
         vehicleSafety: safetyAnalysis.vehicleSafetyMessage,
         recommendation: safetyAnalysis.recommendation,
+        steps: routeData.steps, // Include the steps for turn-by-turn directions
         weatherConditions: {
           temperature: Math.round(weatherData.main.temp),
           windChill: weatherData.main.feels_like ? Math.round(weatherData.main.feels_like) : undefined,
