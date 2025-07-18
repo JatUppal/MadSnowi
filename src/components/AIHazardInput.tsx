@@ -30,30 +30,27 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
     setIsProcessing(true);
     try {
       const aiService = AIService.getInstance();
-      const analysis = await aiService.analyzeHazardReport(input.trim());
+      
+      // Get location context before analysis
+      const locationContext = LocationService.getLocationContext();
+      console.log('Using location context:', locationContext);
+      
+      const analysis = await aiService.analyzeHazardReport(input.trim(), locationContext);
 
       console.log('AI Analysis:', analysis);
 
       if (analysis.needsLocationConfirmation) {
-        // AI couldn't determine location precisely
+        // AI couldn't determine location precisely even with available context
         setPendingHazard(analysis);
         setShowLocationPrompt(true);
         setNeedsLocation(true);
       } else {
         // AI found a good location match
-        let coordinates = null;
-        if (analysis.location?.address) {
-          coordinates = await aiService.geocodeLocation(analysis.location.address);
-        }
-
         const hazardReport = {
           text: `${analysis.hazardType}: ${analysis.description}`,
-          location: coordinates ? {
-            address: analysis.location?.address,
-            coordinates: {
-              lat: coordinates.lat,
-              lng: coordinates.lng
-            }
+          location: analysis.location ? {
+            address: analysis.location.address,
+            coordinates: analysis.location.coordinates
           } : undefined
         };
 
@@ -136,7 +133,7 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
               <p className="text-sm">
                 🤖 I detected: <strong>{pendingHazard?.hazardType}</strong>
                 <br />
-                But I need your location to report this hazard accurately. Would you like to share your current location?
+                I checked your route and previous locations, but I still need your current location to report this hazard accurately. Would you like to share your location?
               </p>
               <div className="flex gap-2">
                 <Button 

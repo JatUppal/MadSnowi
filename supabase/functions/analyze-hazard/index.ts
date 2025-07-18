@@ -28,13 +28,73 @@ serve(async (req) => {
   }
 
   try {
-    const { userInput } = await req.json();
+    const { userInput, locationContext } = await req.json();
     console.log('Analyzing hazard input:', userInput);
+    console.log('Location context:', locationContext);
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
+
+    // Build enhanced prompt with location context
+    let systemPrompt = `You are an AI assistant that analyzes road hazard reports. Your job is to:
+1. Identify the type of hazard from user descriptions
+2. Extract location information if mentioned
+3. Use available location context to improve location accuracy
+4. Assess severity level
+5. Determine if more location details are needed
+
+Available Location Context:`;
+
+    if (locationContext?.lastKnownLocation) {
+      systemPrompt += `\n- User's last known location: ${locationContext.lastKnownLocation.address || `${locationContext.lastKnownLocation.lat}, ${locationContext.lastKnownLocation.lng}`}`;
+    }
+    if (locationContext?.routeStartLocation) {
+      systemPrompt += `\n- User's route start: ${locationContext.routeStartLocation.address || `${locationContext.routeStartLocation.lat}, ${locationContext.routeStartLocation.lng}`}`;
+    }
+    if (locationContext?.routeDestinationLocation) {
+      systemPrompt += `\n- User's route destination: ${locationContext.routeDestinationLocation.address || `${locationContext.routeDestinationLocation.lat}, ${locationContext.routeDestinationLocation.lng}`}`;
+    }
+
+    if (!locationContext?.lastKnownLocation && !locationContext?.routeStartLocation && !locationContext?.routeDestinationLocation) {
+      systemPrompt += `\n- No location context available`;
+    }
+
+    systemPrompt += `
+
+IMPORTANT: If the user's hazard description doesn't include a specific location BUT you have location context available, try to intelligently match the hazard to the most likely location:
+- If user is on a planned route, hazard is likely somewhere along that route
+- If user mentions "here" or "where I am", use their last known location
+- If user mentions direction indicators like "ahead", "behind", "near", try to relate to their context
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "hazardType": "Brief description of hazard type",
+  "description": "Original user input",
+  "location": {
+    "address": "extracted or inferred address",
+    "coordinates": {"lat": number, "lng": number},
+    "confidence": "high|medium|low",
+    "source": "extracted|inferred_from_context|unknown"
+  } or null,
+  "severity": "low|medium|high",
+  "needsLocationConfirmation": boolean
+}
+
+Hazard types to look for: ice patches, snow drifts, fallen trees, accidents, potholes, construction, flooding, debris, visibility issues.
+Severity guidelines:
+- high: ice, fallen trees, accidents, severe flooding
+- medium: snow drifts, construction, moderate debris  
+- low: potholes, minor debris
+
+Location confidence and needsLocationConfirmation logic:
+- high confidence + no confirmation needed: specific address mentioned or high confidence inference from context
+- medium confidence + no confirmation needed: general area mentioned with good context
+- low confidence + confirmation needed: vague description with some context
+- null location + confirmation needed: no location info and no useful context
+
+Set needsLocationConfirmation to true ONLY if you cannot determine a likely location with at least medium confidence using the available context.`;
 
     // Use OpenAI to analyze the hazard report
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -48,36 +108,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an AI assistant that analyzes road hazard reports. Your job is to:
-1. Identify the type of hazard from user descriptions
-2. Extract location information if mentioned
-3. Assess severity level
-4. Determine if more location details are needed
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "hazardType": "Brief description of hazard type",
-  "description": "Original user input",
-  "location": {
-    "address": "extracted address or null",
-    "confidence": "high|medium|low"
-  } or null,
-  "severity": "low|medium|high",
-  "needsLocationConfirmation": boolean
-}
-
-Hazard types to look for: ice patches, snow drifts, fallen trees, accidents, potholes, construction, flooding, debris, visibility issues.
-Severity guidelines:
-- high: ice, fallen trees, accidents, severe flooding
-- medium: snow drifts, construction, moderate debris  
-- low: potholes, minor debris
-
-Location confidence:
-- high: specific address or landmark mentioned
-- medium: road name or highway number mentioned
-- low: vague location description
-
-Set needsLocationConfirmation to true if location is null or confidence is low.`
+            content: systemPrompt
           },
           {
             role: 'user',
@@ -85,7 +116,7 @@ Set needsLocationConfirmation to true if location is null or confidence is low.`
           }
         ],
         temperature: 0.3,
-        max_tokens: 500,
+        max_tokens: 800,
       }),
     });
 

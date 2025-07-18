@@ -1,11 +1,21 @@
-
 export interface UserLocation {
   lat: number;
   lng: number;
   address?: string;
+  timestamp?: number;
+}
+
+export interface LocationContext {
+  lastKnownLocation?: UserLocation;
+  routeStartLocation?: UserLocation;
+  routeDestinationLocation?: UserLocation;
 }
 
 export class LocationService {
+  private static readonly LOCATION_STORAGE_KEY = 'user_last_location';
+  private static readonly ROUTE_START_KEY = 'route_start_location';
+  private static readonly ROUTE_DEST_KEY = 'route_destination_location';
+
   static async requestUserLocation(): Promise<UserLocation | null> {
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
@@ -18,7 +28,8 @@ export class LocationService {
         async (position) => {
           const location: UserLocation = {
             lat: position.coords.latitude,
-            lng: position.coords.longitude
+            lng: position.coords.longitude,
+            timestamp: Date.now()
           };
 
           // Try to get address from coordinates (reverse geocoding)
@@ -28,6 +39,9 @@ export class LocationService {
           } catch (error) {
             console.log('Could not get address for location:', error);
           }
+
+          // Store as last known location
+          this.storeLastKnownLocation(location);
 
           resolve(location);
         },
@@ -42,6 +56,87 @@ export class LocationService {
         }
       );
     });
+  }
+
+  static storeLastKnownLocation(location: UserLocation): void {
+    try {
+      localStorage.setItem(this.LOCATION_STORAGE_KEY, JSON.stringify(location));
+    } catch (error) {
+      console.error('Error storing location:', error);
+    }
+  }
+
+  static getLastKnownLocation(): UserLocation | null {
+    try {
+      const stored = localStorage.getItem(this.LOCATION_STORAGE_KEY);
+      if (!stored) return null;
+      
+      const location = JSON.parse(stored) as UserLocation;
+      
+      // Check if location is less than 24 hours old
+      if (location.timestamp && Date.now() - location.timestamp > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(this.LOCATION_STORAGE_KEY);
+        return null;
+      }
+      
+      return location;
+    } catch (error) {
+      console.error('Error retrieving stored location:', error);
+      return null;
+    }
+  }
+
+  static storeRouteStartLocation(location: UserLocation): void {
+    try {
+      localStorage.setItem(this.ROUTE_START_KEY, JSON.stringify(location));
+    } catch (error) {
+      console.error('Error storing route start location:', error);
+    }
+  }
+
+  static getRouteStartLocation(): UserLocation | null {
+    try {
+      const stored = localStorage.getItem(this.ROUTE_START_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('Error retrieving route start location:', error);
+      return null;
+    }
+  }
+
+  static storeRouteDestinationLocation(location: UserLocation): void {
+    try {
+      localStorage.setItem(this.ROUTE_DEST_KEY, JSON.stringify(location));
+    } catch (error) {
+      console.error('Error storing route destination location:', error);
+    }
+  }
+
+  static getRouteDestinationLocation(): UserLocation | null {
+    try {
+      const stored = localStorage.getItem(this.ROUTE_DEST_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+      console.error('Error retrieving route destination location:', error);
+      return null;
+    }
+  }
+
+  static getLocationContext(): LocationContext {
+    return {
+      lastKnownLocation: this.getLastKnownLocation(),
+      routeStartLocation: this.getRouteStartLocation(),
+      routeDestinationLocation: this.getRouteDestinationLocation()
+    };
+  }
+
+  static hasAnyLocationData(): boolean {
+    const context = this.getLocationContext();
+    return !!(
+      context.lastKnownLocation ||
+      context.routeStartLocation ||
+      context.routeDestinationLocation
+    );
   }
 
   private static async reverseGeocode(lat: number, lng: number): Promise<string | null> {

@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { LocationContext } from './locationService';
 
 interface HazardLocation {
   address?: string;
@@ -28,12 +29,16 @@ export class AIService {
     return AIService.instance;
   }
 
-  async analyzeHazardReport(userInput: string): Promise<HazardAnalysis> {
+  async analyzeHazardReport(userInput: string, locationContext?: LocationContext): Promise<HazardAnalysis> {
     try {
       console.log('Sending hazard input to AI:', userInput);
+      console.log('Location context:', locationContext);
       
       const { data, error } = await supabase.functions.invoke('analyze-hazard', {
-        body: { userInput }
+        body: { 
+          userInput,
+          locationContext 
+        }
       });
 
       if (error) {
