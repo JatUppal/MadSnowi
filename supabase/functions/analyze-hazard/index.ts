@@ -37,66 +37,100 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Build enhanced prompt with location context
-    let systemPrompt = `You are an AI assistant that analyzes road hazard reports. Your job is to:
-1. Identify the type of hazard from user descriptions
-2. Extract location information if mentioned
-3. Use available location context to improve location accuracy
-4. Assess severity level
-5. Determine if more location details are needed
+    // Build comprehensive context for AI analysis
+    let systemPrompt = `You are an expert AI assistant analyzing road hazard reports. You will receive ALL available user information and must use this context to make the best possible guess about hazard location.
 
-Available Location Context:`;
+=== USER INFORMATION ANALYSIS ===
+
+LOCATION CONTEXT:`;
+
+    let hasLocationData = false;
 
     if (locationContext?.lastKnownLocation) {
-      systemPrompt += `\n- User's last known location: ${locationContext.lastKnownLocation.address || `${locationContext.lastKnownLocation.lat}, ${locationContext.lastKnownLocation.lng}`}`;
-    }
-    if (locationContext?.routeStartLocation) {
-      systemPrompt += `\n- User's route start: ${locationContext.routeStartLocation.address || `${locationContext.routeStartLocation.lat}, ${locationContext.routeStartLocation.lng}`}`;
-    }
-    if (locationContext?.routeDestinationLocation) {
-      systemPrompt += `\n- User's route destination: ${locationContext.routeDestinationLocation.address || `${locationContext.routeDestinationLocation.lat}, ${locationContext.routeDestinationLocation.lng}`}`;
+      hasLocationData = true;
+      const location = locationContext.lastKnownLocation;
+      const timeAgo = location.timestamp ? Math.floor((Date.now() - location.timestamp) / (1000 * 60)) : 'unknown';
+      systemPrompt += `
+📍 LAST KNOWN LOCATION: ${location.address || `${location.lat}, ${location.lng}`}
+   - Coordinates: ${location.lat}, ${location.lng}
+   - Captured: ${timeAgo} minutes ago
+   - Confidence: This is where the user was recently located`;
     }
 
-    if (!locationContext?.lastKnownLocation && !locationContext?.routeStartLocation && !locationContext?.routeDestinationLocation) {
-      systemPrompt += `\n- No location context available`;
+    if (locationContext?.routeStartLocation) {
+      hasLocationData = true;
+      const start = locationContext.routeStartLocation;
+      systemPrompt += `
+🚗 ROUTE START: ${start.address || `${start.lat}, ${start.lng}`}
+   - Coordinates: ${start.lat}, ${start.lng}
+   - Context: User planned a trip starting from here`;
+    }
+
+    if (locationContext?.routeDestinationLocation) {
+      hasLocationData = true;
+      const dest = locationContext.routeDestinationLocation;
+      systemPrompt += `
+🎯 ROUTE DESTINATION: ${dest.address || `${dest.lat}, ${dest.lng}`}
+   - Coordinates: ${dest.lat}, ${dest.lng}
+   - Context: User is traveling to this location`;
+    }
+
+    if (!hasLocationData) {
+      systemPrompt += `
+❌ NO LOCATION DATA: User has not shared any location information previously`;
     }
 
     systemPrompt += `
 
-IMPORTANT: If the user's hazard description doesn't include a specific location BUT you have location context available, try to intelligently match the hazard to the most likely location:
-- If user is on a planned route, hazard is likely somewhere along that route
-- If user mentions "here" or "where I am", use their last known location
-- If user mentions direction indicators like "ahead", "behind", "near", try to relate to their context
+=== AI ANALYSIS INSTRUCTIONS ===
 
-Respond ONLY with valid JSON in this exact format:
+Your task is to:
+1. Analyze the user's hazard description
+2. Use ALL available context to make an educated guess about location
+3. Only ask for user location if you genuinely cannot make a reasonable guess
+
+LOCATION INFERENCE RULES:
+• If user says "here", "where I am", "at my location" → Use last known location
+• If user says "ahead", "behind", "up the road" → Infer direction from route context
+• If user mentions road names → Cross-reference with their known locations
+• If user is on a planned route → Hazard is likely somewhere along that path
+• If no specific location mentioned but context exists → Make best educated guess
+• If user says general area (like "downtown", "near the mall") → Combine with their context
+
+CONFIDENCE LEVELS:
+• HIGH: Specific location mentioned OR strong contextual inference
+• MEDIUM: General area mentioned OR moderate contextual inference  
+• LOW: Weak contextual clues OR ambiguous description
+• UNKNOWN: No useful information to make any location guess
+
+WHEN TO ASK FOR LOCATION:
+Only set needsLocationConfirmation=true if:
+- No location mentioned in description AND
+- No useful context available to make even a rough guess AND
+- Cannot infer location from any available data
+
+RESPONSE FORMAT (JSON only):
 {
   "hazardType": "Brief description of hazard type",
   "description": "Original user input",
   "location": {
-    "address": "extracted or inferred address",
-    "coordinates": {"lat": number, "lng": number},
+    "address": "best guess address or area description",
+    "coordinates": {"lat": number, "lng": number} or null,
     "confidence": "high|medium|low",
-    "source": "extracted|inferred_from_context|unknown"
+    "source": "extracted_from_text|inferred_from_last_known|inferred_from_route|inferred_from_context|educated_guess",
+    "reasoning": "explanation of how you determined this location"
   } or null,
   "severity": "low|medium|high",
-  "needsLocationConfirmation": boolean
+  "needsLocationConfirmation": boolean,
+  "aiReasoning": "Brief explanation of your decision process"
 }
 
-Hazard types to look for: ice patches, snow drifts, fallen trees, accidents, potholes, construction, flooding, debris, visibility issues.
-Severity guidelines:
-- high: ice, fallen trees, accidents, severe flooding
-- medium: snow drifts, construction, moderate debris  
-- low: potholes, minor debris
+HAZARD TYPES: ice patches, snow drifts, fallen trees, accidents, potholes, construction, flooding, debris, visibility issues
+SEVERITY: high=dangerous (ice,trees,accidents), medium=moderate (snow,construction), low=minor (potholes,small debris)`;
 
-Location confidence and needsLocationConfirmation logic:
-- high confidence + no confirmation needed: specific address mentioned or high confidence inference from context
-- medium confidence + no confirmation needed: general area mentioned with good context
-- low confidence + confirmation needed: vague description with some context
-- null location + confirmation needed: no location info and no useful context
+    console.log('System prompt with context:', systemPrompt);
 
-Set needsLocationConfirmation to true ONLY if you cannot determine a likely location with at least medium confidence using the available context.`;
-
-    // Use OpenAI to analyze the hazard report
+    // Use OpenAI to analyze the hazard report with full context
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -112,11 +146,13 @@ Set needsLocationConfirmation to true ONLY if you cannot determine a likely loca
           },
           {
             role: 'user',
-            content: userInput
+            content: `USER HAZARD REPORT: "${userInput}"
+
+Please analyze this hazard report using all the context provided above and make your best guess about the location.`
           }
         ],
-        temperature: 0.3,
-        max_tokens: 800,
+        temperature: 0.2,
+        max_tokens: 1000,
       }),
     });
 

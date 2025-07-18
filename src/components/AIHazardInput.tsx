@@ -33,7 +33,13 @@ export const AIHazardInput: React.FC<AIHazardInputProps> = ({ onHazardSubmit }) 
       
       // Get location context before analysis
       const locationContext = LocationService.getLocationContext();
-      console.log('Using location context:', locationContext);
+      
+      console.log('=== AI PROCESSING INFORMATION ===');
+      console.log('User Input:', input.trim());
+      console.log('Last Known Location:', locationContext.lastKnownLocation);
+      console.log('Route Start:', locationContext.routeStartLocation);
+      console.log('Route Destination:', locationContext.routeDestinationLocation);
+      console.log('Has Any Location Data:', LocationService.hasAnyLocationData());
       
       const analysis = await aiService.analyzeHazardReport(input.trim(), locationContext);
 
