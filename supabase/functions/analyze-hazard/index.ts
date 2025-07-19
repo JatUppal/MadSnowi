@@ -288,8 +288,31 @@ Please analyze this hazard report using all the context provided above and make 
     } catch (aiError) {
       console.log('OpenAI analysis failed, using enhanced fallback logic:', aiError.message);
       
-      // Enhanced fallback analysis using Google Places Text Search
-      analysis = await createFallbackAnalysis(userInput, locationContext);
+      // Simple fallback analysis without complex dependencies
+      analysis = {
+        title: "Road Hazard",
+        hazardType: "Road hazard",
+        description: userInput.trim(),
+        location: null,
+        severity: "medium",
+        needsLocationConfirmation: true,
+        aiReasoning: "Analysis created using fallback logic due to AI service unavailability"
+      };
+      
+      // Try to add user location if available
+      if (locationContext?.lastKnownLocation) {
+        analysis.location = {
+          address: locationContext.lastKnownLocation.address || `📍 Location: ${locationContext.lastKnownLocation.lat.toFixed(4)}, ${locationContext.lastKnownLocation.lng.toFixed(4)}`,
+          coordinates: {
+            lat: locationContext.lastKnownLocation.lat,
+            lng: locationContext.lastKnownLocation.lng
+          },
+          confidence: "medium" as const,
+          source: "user_location" as const,
+          reasoning: "Used user location as no specific place could be identified"
+        };
+        analysis.needsLocationConfirmation = false;
+      }
     }
 
     // Enhanced location processing with Google Places API
