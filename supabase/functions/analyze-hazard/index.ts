@@ -495,9 +495,8 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!googleMapsApiKey) return null;
 
-    // Extract business/place names and street names from input - enhanced patterns
+    // Extract business/place names from input
     const businessMatch = userInput.match(/\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|7-eleven|shell|chevron|gas\s*station|grocery\s*store|pharmacy|bank|atm|home\s*depot|lowes?|best\s*buy|costco|sams?\s*club|whole\s*foods|trader\s*joes?|chipotle|subway|taco\s*bell|burger\s*king|kfc|pizza\s*hut|dominos?|papa\s*johns?|dennys?|ihop|applebees?|olive\s*garden|red\s*lobster|chilis?|outback|panda\s*express|in-n-out|five\s*guys|jack\s*in\s*the\s*box|wendys?|arbys?|sonic|dairy\s*queen|baskin\s*robbins|dunkin\s*donuts?|krispy\s*kreme|tim\s*hortons?|panera\s*bread?|einstein\s*bros?|jamba\s*juice|smoothie\s*king|orange\s*julius|auntie\s*annes?|cinnabon|pretzelmaker|hot\s*dog\s*on\s*a\s*stick|nathans?\s*famous|wienerschnitzel|del\s*taco|el\s*pollo\s*loco|yoshinoya|pei\s*wei|pick\s*up\s*stix|pf\s*changs?|benihana|cheesecake\s*factory|california\s*pizza\s*kitchen|bjs?\s*restaurant|cracker\s*barrel|golden\s*corral|hometown\s*buffet|ryans?\s*steakhouse|sizzler|black\s*angus|claim\s*jumper|marie\s*callenders?|mimi\s*cafe|coco\s*s|nordstrom|macys?|jc\s*penney|kohls?|sears|bloomingdales?|neiman\s*marcus|saks\s*fifth\s*avenue|barneys?\s*new\s*york|century\s*21|tj\s*maxx|marshalls?|ross\s*dress\s*for\s*less|burlington\s*coat\s*factory|old\s*navy|gap|banana\s*republic|american\s*eagle|abercrombie|hollister|aeropostale|forever\s*21|h&m|zara|uniqlo|urban\s*outfitters|anthropologie|free\s*people|victoria\s*secret|bath\s*and\s*body\s*works|bed\s*bath\s*and\s*beyond|williams\s*sonoma|pottery\s*barn|crate\s*and\s*barrel|pier\s*1|ikea|ashley\s*furniture|rooms\s*to\s*go|la-z-boy|ethan\s*allen|restoration\s*hardware|west\s*elm|cb2|design\s*within\s*reach|room\s*and\s*board|mitchell\s*gold|bob\s*williams|dwr|world\s*market|cost\s*plus|pier\s*1\s*imports|tuesday\s*morning|big\s*lots|dollar\s*tree|family\s*dollar|dollar\s*general)\b/gi);
-    const streetGuess = userInput.match(/\b(\w+\s+(road|rd|avenue|ave|parkway|blvd|boulevard|street|st|lane|ln|way|drive|dr|court|ct|circle|cir|place|pl))\b/gi)?.[0] || '';
     
     if (!businessMatch) return null;
 
@@ -505,77 +504,110 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     const userLat = locationContext.lastKnownLocation.lat;
     const userLng = locationContext.lastKnownLocation.lng;
     
-    // Build a more specific query including street information if available
-    let query = business;
-    if (streetGuess) {
-      // Include street context in the search for better matching
-      query = `${business} ${streetGuess}`;
+    console.log('🔍 FINDING CLOSEST BUSINESS TO USER');
+    console.log(`🔍 User location: ${userLat}, ${userLng}`);
+    console.log(`🔍 Business to find: "${business}"`);
+    
+    // Strategy 1: Use Nearby Search API first (more accurate for finding closest businesses)
+    const nearbySearchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userLat},${userLng}&radius=8000&keyword=${encodeURIComponent(business)}&key=${googleMapsApiKey}`;
+    
+    console.log('🔍 STRATEGY 1: Nearby Search API');
+    console.log(`🔍 Nearby search URL: ${nearbySearchUrl.replace(googleMapsApiKey, '[REDACTED]')}`);
+    
+    let response = await fetch(nearbySearchUrl);
+    let data = await response.json();
+    
+    console.log(`🔍 Nearby search status: ${data.status}`);
+    console.log(`🔍 Nearby search results: ${data.results?.length || 0}`);
+    
+    // Strategy 2: If nearby search fails or returns no results, try text search
+    if (data.status !== 'OK' || !data.results || data.results.length === 0) {
+      console.log('🔍 STRATEGY 2: Text Search API (fallback)');
+      const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(business)}&location=${userLat},${userLng}&radius=8000&key=${googleMapsApiKey}`;
+      
+      console.log(`🔍 Text search URL: ${textSearchUrl.replace(googleMapsApiKey, '[REDACTED]')}`);
+      
+      response = await fetch(textSearchUrl);
+      data = await response.json();
+      
+      console.log(`🔍 Text search status: ${data.status}`);
+      console.log(`🔍 Text search results: ${data.results?.length || 0}`);
     }
     
-    // Start with small radius focused on user location - prioritize nearby businesses
-    const radius = 5000; // Start with 5km (about 3 miles) for local search
-    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=${radius}&rankby=distance&key=${googleMapsApiKey}`;
-    
-    console.log('🔍 PRIORITY: Finding NEAREST business to user location');
-    console.log('🔍 User location:', userLat, userLng);
-    console.log('🔍 Search query:', query);
-    console.log('🔍 Search radius:', radius, 'meters (prioritizing closest matches)');
-    console.log('🔍 Search URL:', textSearchUrl.replace(googleMapsApiKey, '[REDACTED]'));
-    
-    const response = await fetch(textSearchUrl);
-    if (!response.ok) return null;
+    if (!response.ok || data.status !== 'OK' || !data.results || data.results.length === 0) {
+      console.log('🔍 No results found from either search method');
+      return null;
+    }
 
-    const data = await response.json();
-    console.log('🔍 Places API response status:', data.status);
-    console.log('🔍 Number of results:', data.results?.length || 0);
+    // Find the closest business by calculating actual distances
+    let closestBusiness = null;
+    let shortestDistance = Number.MAX_VALUE;
     
-    if (data.status === 'OK' && data.results.length > 0) {
-      console.log(`🔍 Found ${data.results.length} potential matches`);
+    console.log(`🔍 ANALYZING ${data.results.length} POTENTIAL MATCHES:`);
+    
+    for (let i = 0; i < data.results.length; i++) {
+      const place = data.results[i];
+      const distance = calculateDistance(
+        userLat, userLng,
+        place.geometry.location.lat, place.geometry.location.lng
+      );
       
-      // Find the absolute closest business to user location (distance is priority #1)
-      let bestPlace = data.results[0];
-      let shortestDistance = Number.MAX_VALUE;
+      // Check if the business name matches what we're looking for
+      const nameMatch = place.name?.toLowerCase().includes(business.toLowerCase()) ||
+                       place.types?.some(type => type.includes(business.toLowerCase()));
       
-      for (const place of data.results) { // Check ALL results, not just top 5
-        const distance = calculateDistance(
-          userLat, userLng,
-          place.geometry.location.lat, place.geometry.location.lng
-        );
-        
-        // Priority is DISTANCE FIRST - closest business wins
-        const nameMatch = place.name?.toLowerCase().includes(business.toLowerCase());
-        
-        console.log(`📍 EVALUATING: ${place.name}`);
-        console.log(`  📍 Address: ${place.formatted_address}`);
-        console.log(`  📍 Distance from user: ${distance.toFixed(2)} km`);
-        console.log(`  📍 Name matches "${business}": ${nameMatch}`);
-        
-        // Prioritize exact business name matches that are closest
-        if (nameMatch && distance < shortestDistance) {
-          shortestDistance = distance;
-          bestPlace = place;
-          console.log(`  ✅ NEW CLOSEST MATCH: ${place.name} at ${distance.toFixed(2)} km`);
-        }
+      console.log(`📍 [${i + 1}] ${place.name}`);
+      console.log(`    📍 Address: ${place.formatted_address || place.vicinity}`);
+      console.log(`    📍 Distance: ${distance.toFixed(2)} km`);
+      console.log(`    📍 Name match: ${nameMatch}`);
+      console.log(`    📍 Types: ${place.types?.join(', ')}`);
+      
+      // Prioritize exact name matches that are closest
+      if (nameMatch && distance < shortestDistance) {
+        shortestDistance = distance;
+        closestBusiness = place;
+        console.log(`    ✅ NEW CLOSEST MATCH!`);
       }
-      
-      console.log(`🎯 FINAL SELECTION: ${bestPlace.name}`);
-      console.log(`🎯 ADDRESS: ${bestPlace.formatted_address}`);
-      console.log(`🎯 DISTANCE FROM USER: ${shortestDistance.toFixed(2)} km`);
-      console.log(`🎯 COORDINATES: ${bestPlace.geometry.location.lat}, ${bestPlace.geometry.location.lng}`);
-      
-      return {
-        address: `📍 ${bestPlace.formatted_address}`,
-        coordinates: {
-          lat: bestPlace.geometry.location.lat,
-          lng: bestPlace.geometry.location.lng
-        },
-        confidence: 'high' as const,
-        source: 'places_api' as const,
-        reasoning: `Found closest ${business} to user location: ${bestPlace.name} (${shortestDistance.toFixed(1)} km away)`
-      };
     }
     
-    return null;
+    if (!closestBusiness) {
+      console.log('🔍 No matching businesses found');
+      return null;
+    }
+    
+    // Get detailed address using Place Details API for more accurate address
+    const placeDetailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${closestBusiness.place_id}&fields=formatted_address,geometry&key=${googleMapsApiKey}`;
+    
+    console.log('🔍 GETTING DETAILED ADDRESS INFO');
+    const detailsResponse = await fetch(placeDetailsUrl);
+    const detailsData = await detailsResponse.json();
+    
+    let finalAddress = closestBusiness.formatted_address || closestBusiness.vicinity;
+    let finalCoordinates = closestBusiness.geometry.location;
+    
+    if (detailsData.status === 'OK' && detailsData.result) {
+      finalAddress = detailsData.result.formatted_address || finalAddress;
+      finalCoordinates = detailsData.result.geometry.location || finalCoordinates;
+      console.log('✅ Enhanced address from Place Details API');
+    }
+    
+    console.log(`🎯 FINAL RESULT:`);
+    console.log(`🎯 Business: ${closestBusiness.name}`);
+    console.log(`🎯 Address: ${finalAddress}`);
+    console.log(`🎯 Distance: ${shortestDistance.toFixed(2)} km`);
+    console.log(`🎯 Coordinates: ${finalCoordinates.lat}, ${finalCoordinates.lng}`);
+    
+    return {
+      address: `📍 ${finalAddress}`,
+      coordinates: {
+        lat: finalCoordinates.lat,
+        lng: finalCoordinates.lng
+      },
+      confidence: 'high' as const,
+      source: 'places_api' as const,
+      reasoning: `Found closest ${business} using Google Places API: ${closestBusiness.name} located ${shortestDistance.toFixed(1)} km from user`
+    };
+    
   } catch (error) {
     console.error('Error enhancing location with Places API:', error);
     return null;
