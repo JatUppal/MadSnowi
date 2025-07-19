@@ -70,10 +70,16 @@ LOCATION CONTEXT:`;
       // Use existing address or coordinates as fallback
       let userLocationAddress = location.address || `${location.lat}, ${location.lng}`;
       
+      console.log(`🔍 REVERSE GEOCODING START:`);
+      console.log(`  - Original coordinates: ${location.lat}, ${location.lng}`);
+      console.log(`  - Original address: ${userLocationAddress}`);
+      
       // Try to reverse geocode coordinates to get readable address (optional)
       if (googleMapsApiKey && userLocationAddress.includes('Location:')) {
         try {
           const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${googleMapsApiKey}`;
+          console.log(`  - Making geocoding request to: ${geocodeUrl.replace(googleMapsApiKey, 'API_KEY_HIDDEN')}`);
+          
           const geocodeResponse = await fetch(geocodeUrl);
           
           if (geocodeResponse.ok) {
@@ -81,7 +87,9 @@ LOCATION CONTEXT:`;
             
             if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
               userLocationAddress = geocodeData.results[0].formatted_address;
-              console.log(`🗺️ Reverse geocoded user location: ${userLocationAddress}`);
+              console.log(`✅ REVERSE GEOCODING SUCCESS:`);
+              console.log(`  - New address: ${userLocationAddress}`);
+              console.log(`  - Coordinates: ${location.lat}, ${location.lng}`);
             } else {
               console.log(`⚠️ Geocoding failed with status: ${geocodeData.status}`);
             }
@@ -92,7 +100,11 @@ LOCATION CONTEXT:`;
           console.log(`⚠️ Failed to reverse geocode user location: ${error.message}`);
           // Continue with original address - don't let geocoding failure break the function
         }
+      } else {
+        console.log(`  - Skipping reverse geocoding (no API key or address already readable)`);
       }
+      
+      console.log(`📍 FINAL USER LOCATION FOR AI: ${userLocationAddress}`);
       
       systemPrompt += `
 📍 LAST KNOWN LOCATION: ${userLocationAddress}
