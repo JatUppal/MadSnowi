@@ -226,21 +226,27 @@ Create a precise 2-4 word title with correct spelling:
 - Always generate a clean, specific, informative title (2-4 words)
 
 LOCATION INFERENCE PRIORITY (CRITICAL):
-1. **FIRST PRIORITY**: Extract specific location from user text and match with nearby places
-   • "7/11" → Check nearby places list for exact 7-Eleven match
-   • "Safeway" → Find Safeway in nearby places list
-   • "tree down near 7/11 in Dublin" → Find Dublin 7-Eleven from context
-   • "Highway 101" → Find Highway 101 in user's area  
-   • "downtown" → Find downtown relative to user's known locations
+1. **FIRST PRIORITY - USER LOCATION PROXIMITY**: Always prioritize finding the CLOSEST business to user's location
+   • "fallen tree by safeway" → Find the NEAREST Safeway to user's coordinates FIRST
+   • "accident at 7/11" → Find the CLOSEST 7-Eleven to user's current location
+   • "ice patch near walmart" → Find the NEAREST Walmart to user's position
+   • NEVER use a random or far-away location - ALWAYS find closest match to user
 
-2. **USE NEARBY PLACES DATA**: Prioritize matches from nearby places list
+2. **SEARCH EXPANSION STRATEGY**: Start near user location and expand outward
+   • Search within 1 mile radius of user location FIRST
+   • If no match found, expand to 5 mile radius
+   • If still no match, expand to 10 mile radius
+   • Always prefer closer businesses over farther ones
+
+3. **USE NEARBY PLACES DATA**: Prioritize businesses from nearby places list
    • If user mentions "Safeway" and there's a Safeway in nearby places → Use that exact location
-   • Match business names, landmarks, and addresses from nearby places first
+   • Match business names from nearby places list FIRST before expanding search
    • Use nearby places to disambiguate common names (multiple Starbucks, etc.)
 
-3. **USE CONTEXT TO NARROW DOWN**: Use user's location context to resolve ambiguity
-   • Multiple matches exist → Pick closest to user's coordinates
-   • User context helps disambiguate common place names
+4. **BUSINESS NAME MATCHING**: Extract business name and find NEAREST match
+   • Extract: "walgreens", "cvs", "safeway", "target", "walmart", "starbucks", etc.
+   • Search Google Places for exact business name near user location
+   • Return address of CLOSEST matching business only
 
 4. **DIRECTION/RELATIVE TERMS**: 
    • "here" / "where I am" / "at my location" → Use exact user location
@@ -506,10 +512,14 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
       query = `${business} ${streetGuess}`;
     }
     
-    // Use a larger radius to find places further away but still prioritize by distance
-    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=16000&key=${googleMapsApiKey}`;
+    // Start with small radius focused on user location - prioritize nearby businesses
+    const radius = 5000; // Start with 5km (about 3 miles) for local search
+    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=${radius}&rankby=distance&key=${googleMapsApiKey}`;
     
-    console.log('🔍 Enhanced location search query:', query);
+    console.log('🔍 PRIORITY: Finding NEAREST business to user location');
+    console.log('🔍 User location:', userLat, userLng);
+    console.log('🔍 Search query:', query);
+    console.log('🔍 Search radius:', radius, 'meters (prioritizing closest matches)');
     console.log('🔍 Search URL:', textSearchUrl.replace(googleMapsApiKey, '[REDACTED]'));
     
     const response = await fetch(textSearchUrl);
@@ -520,36 +530,38 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     console.log('🔍 Number of results:', data.results?.length || 0);
     
     if (data.status === 'OK' && data.results.length > 0) {
-      // Find the closest result to user's location
+      console.log(`🔍 Found ${data.results.length} potential matches`);
+      
+      // Find the absolute closest business to user location (distance is priority #1)
       let bestPlace = data.results[0];
       let shortestDistance = Number.MAX_VALUE;
       
-      for (const place of data.results.slice(0, 5)) { // Check top 5 results
+      for (const place of data.results) { // Check ALL results, not just top 5
         const distance = calculateDistance(
           userLat, userLng,
           place.geometry.location.lat, place.geometry.location.lng
         );
         
-        // Calculate scoring factors for better matching
-        const nameScore = place.name?.toLowerCase().includes(business.toLowerCase()) ? 1 : 0;
-        const addressScore = streetGuess && place.formatted_address?.toLowerCase().includes(streetGuess.toLowerCase()) ? 0.5 : 0;
-        const distanceScore = Math.max(0, 1 - (distance / 10)); // Normalize distance to 0-1 scale
-        const totalScore = nameScore + addressScore + distanceScore;
+        // Priority is DISTANCE FIRST - closest business wins
+        const nameMatch = place.name?.toLowerCase().includes(business.toLowerCase());
         
-        console.log(`🔍 Evaluating place: ${place.name} at ${place.formatted_address}`);
-        console.log(`  - Name score: ${nameScore}`);
-        console.log(`  - Address score: ${addressScore}`);
-        console.log(`  - Distance score: ${distanceScore.toFixed(2)}`);
-        console.log(`  - Total score: ${totalScore.toFixed(2)}`);
-        console.log(`  - Distance: ${distance.toFixed(2)} km`);
+        console.log(`📍 EVALUATING: ${place.name}`);
+        console.log(`  📍 Address: ${place.formatted_address}`);
+        console.log(`  📍 Distance from user: ${distance.toFixed(2)} km`);
+        console.log(`  📍 Name matches "${business}": ${nameMatch}`);
         
-        if (distance < shortestDistance) {
+        // Prioritize exact business name matches that are closest
+        if (nameMatch && distance < shortestDistance) {
           shortestDistance = distance;
           bestPlace = place;
+          console.log(`  ✅ NEW CLOSEST MATCH: ${place.name} at ${distance.toFixed(2)} km`);
         }
       }
       
-      console.log(`🎯 Selected closest place: ${bestPlace.name} (${shortestDistance.toFixed(2)} km away)`);
+      console.log(`🎯 FINAL SELECTION: ${bestPlace.name}`);
+      console.log(`🎯 ADDRESS: ${bestPlace.formatted_address}`);
+      console.log(`🎯 DISTANCE FROM USER: ${shortestDistance.toFixed(2)} km`);
+      console.log(`🎯 COORDINATES: ${bestPlace.geometry.location.lat}, ${bestPlace.geometry.location.lng}`);
       
       return {
         address: `📍 ${bestPlace.formatted_address}`,
@@ -559,7 +571,7 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
         },
         confidence: 'high' as const,
         source: 'places_api' as const,
-        reasoning: `Found closest match using Google Places: ${bestPlace.name} (${shortestDistance.toFixed(1)} km away)`
+        reasoning: `Found closest ${business} to user location: ${bestPlace.name} (${shortestDistance.toFixed(1)} km away)`
       };
     }
     
