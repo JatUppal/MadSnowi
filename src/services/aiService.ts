@@ -97,12 +97,22 @@ export class AIService {
           );
           
           if (geocodedCoords) {
+            // Check if coordinates match user location (indicating fallback to user location)
+            const userCoords = locationContext.lastKnownLocation || 
+                              locationContext.routeStartLocation || 
+                              locationContext.routeDestinationLocation;
+            
+            const isUserLocationFallback = userCoords && 
+              Math.abs(geocodedCoords.lat - userCoords.lat) < 0.001 && 
+              Math.abs(geocodedCoords.lng - userCoords.lng) < 0.001;
+            
             // Try to get full address information
             const fullAddressInfo = await this.getFullAddressInfo(geocodedCoords);
             
             console.log('✅ GEOCODING SUCCESS:');
             console.log('  - Input Location:', extractedLocation);
             console.log('  - Found Coordinates:', geocodedCoords);
+            console.log('  - Is User Location Fallback:', isUserLocationFallback);
             console.log('  - Full Address Info:', fullAddressInfo);
             console.log('  - Street Address:', fullAddressInfo?.formatted_address || 'Not available');
             console.log('  - City:', fullAddressInfo?.city || 'Not available');
@@ -110,11 +120,15 @@ export class AIService {
             console.log('  - ZIP Code:', fullAddressInfo?.zip || 'Not available');
             console.log('  - Country:', fullAddressInfo?.country || 'Not available');
             
+            // Set confidence based on whether we found the actual location or fell back to user location
+            const confidence: 'high' | 'medium' | 'low' = isUserLocationFallback ? 'medium' : 'high';
+            const addressPrefix = isUserLocationFallback ? `${extractedLocation} (estimated near user location)` : (fullAddressInfo?.formatted_address || extractedLocation);
+            
             fallbackLocation = {
-              address: fullAddressInfo?.formatted_address || extractedLocation,
+              address: addressPrefix,
               coordinates: geocodedCoords,
-              confidence: 'high' as const,
-              source: 'fallback_geocoded' as const
+              confidence: confidence,
+              source: isUserLocationFallback ? 'fallback_estimated_near_user' : 'fallback_geocoded'
             };
             needsConfirmation = false;
             
@@ -123,6 +137,7 @@ export class AIService {
             console.log('  - Latitude:', fallbackLocation.coordinates.lat);
             console.log('  - Longitude:', fallbackLocation.coordinates.lng);
             console.log('  - Confidence:', fallbackLocation.confidence);
+            console.log('  - Reasoning:', isUserLocationFallback ? 'Used user location as fallback' : 'Found actual location coordinates');
             
           } else {
             throw new Error('Geocoding returned null coordinates');
@@ -147,7 +162,7 @@ export class AIService {
               lat: userCoords.lat,
               lng: userCoords.lng
             },
-            confidence: 'low' as const,
+            confidence: 'medium' as const,
             source: 'fallback_estimated_near_user' as const
           };
           needsConfirmation = false;
@@ -164,11 +179,11 @@ export class AIService {
           source: 'fallback_user_location' as const
         };
         needsConfirmation = false;
-        console.log('Smart fallback: using user location');
+        console.log('Smart fallback: using user location (confidence: medium)');
       } else {
         // No location data available - must prompt
         needsConfirmation = true;
-        console.log('Smart fallback: no location data, will prompt user');
+        console.log('Smart fallback: no location data, will prompt user (confidence: low)');
       }
       
       // Fallback analysis with smart location handling
