@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 interface HazardAnalysis {
+  title: string;
   hazardType: string;
   description: string;
   location: {
@@ -85,9 +86,29 @@ LOCATION CONTEXT:`;
 === AI ANALYSIS INSTRUCTIONS ===
 
 Your task is to:
-1. Analyze the user's hazard description
-2. Use ALL available context to make an educated guess about location
-3. Only ask for user location if you genuinely cannot make a reasonable guess
+1. Correct any grammatical errors and spelling mistakes in the user's description
+2. Create a concise 2-3 word title for the hazard type
+3. Use ALL available context to make an educated guess about location
+4. Format the address as a readable street address (not just coordinates)
+5. Only ask for user location if you genuinely cannot make a reasonable guess
+
+TEXT PROCESSING:
+- Fix spelling errors (e.g., "teh" → "the", "thier" → "their")
+- Correct grammar and capitalize appropriately
+- Make the description clear and professional
+- Keep the original meaning intact
+
+TITLE GENERATION:
+Create a 2-3 word title based on hazard type:
+- Ice/frost → "Ice Hazard"
+- Pothole → "Pothole Alert" 
+- Debris/trash → "Road Debris"
+- Water/flood → "Water Hazard"
+- Construction → "Construction Zone"
+- Accident → "Accident Alert"
+- Animal → "Animal Hazard"
+- Oil spill → "Spill Alert"
+- Default → "Road Hazard"
 
 LOCATION INFERENCE PRIORITY (CRITICAL):
 1. **FIRST PRIORITY**: Extract specific location from user text
@@ -106,10 +127,16 @@ LOCATION INFERENCE PRIORITY (CRITICAL):
    • "ahead" / "up the road" → Estimate along route direction from user location
    • "near downtown" → Find downtown area relative to user's context
 
-4. **FALLBACK HIERARCHY**:
-   • Cannot find mentioned location → Use user's coordinates as fallback (LOW confidence)
+4. **ADDRESS FORMATTING**:
+   • Always provide readable street address when possible
+   • Format as: "123 Main St, City, State ZIP" 
+   • Use 📍 symbol before address
+   • Avoid showing raw coordinates to user
+
+5. **FALLBACK HIERARCHY**:
+   • Cannot find mentioned location → Use user's coordinates as fallback (MEDIUM confidence)
    • No location mentioned but have context → Use user location (MEDIUM confidence)  
-   • No location mentioned and no context → Ask for location
+   • No location mentioned and no context → Ask for location (LOW confidence)
 
 WHEN TO ASK FOR LOCATION:
 Only set needsLocationConfirmation=true if:
@@ -120,10 +147,11 @@ Only set needsLocationConfirmation=true if:
 
 RESPONSE FORMAT (JSON only):
 {
+  "title": "2-3 word hazard title",
   "hazardType": "Brief description of hazard type",
-  "description": "Original user input",
+  "description": "Corrected and cleaned user input with proper grammar",
   "location": {
-    "address": "best guess address or area description",
+    "address": "📍 readable street address or area description", 
     "coordinates": {"lat": number, "lng": number} or null,
     "confidence": "high|medium|low",
     "source": "extracted_from_text|inferred_from_last_known|inferred_from_route|inferred_from_context|educated_guess",
@@ -183,6 +211,7 @@ Please analyze this hazard report using all the context provided above and make 
       console.error('Failed to parse OpenAI response:', parseError);
       // Fallback to basic analysis if AI response is malformed
       analysis = {
+        title: 'Road Hazard',
         hazardType: 'Road hazard reported',
         description: userInput,
         location: null,

@@ -12,6 +12,7 @@ interface HazardLocation {
 }
 
 interface HazardAnalysis {
+  title: string;
   hazardType: string;
   description: string;
   location: HazardLocation | null;
@@ -31,6 +32,7 @@ export class AIService {
 
   async analyzeHazardReport(userInput: string, locationContext?: LocationContext): Promise<HazardAnalysis> {
     try {
+      
       console.log('Sending hazard input to AI:', userInput);
       console.log('Location context:', locationContext);
       
@@ -186,15 +188,69 @@ export class AIService {
         console.log('Smart fallback: no location data, will prompt user (confidence: low)');
       }
       
+      // Process the text to clean it up and create a title
+      const processedText = this.processHazardTextLocal(userInput);
+      
       // Fallback analysis with smart location handling
       return {
-        hazardType: 'Road hazard reported',
-        description: userInput,
+        title: processedText.title,
+        hazardType: processedText.hazardType,
+        description: processedText.description,
         location: fallbackLocation,
         severity: 'medium',
         needsLocationConfirmation: needsConfirmation
       };
     }
+  }
+
+  private processHazardTextLocal(userInput: string): { title: string; hazardType: string; description: string } {
+    // Clean up the input text
+    let cleanedText = userInput.trim();
+    
+    // Basic grammar and spelling corrections
+    cleanedText = cleanedText
+      .replace(/\bi\b/g, 'I')  // Capitalize 'i'
+      .replace(/\btheres\b/gi, 'there is')
+      .replace(/\bthier\b/gi, 'their')
+      .replace(/\bteh\b/gi, 'the')
+      .replace(/\band\s+and\b/gi, 'and')  // Remove duplicate 'and'
+      .replace(/\s+/g, ' ');  // Clean up multiple spaces
+    
+    // Capitalize first letter
+    cleanedText = cleanedText.charAt(0).toUpperCase() + cleanedText.slice(1);
+    
+    // Add period if missing
+    if (!cleanedText.endsWith('.') && !cleanedText.endsWith('!') && !cleanedText.endsWith('?')) {
+      cleanedText += '.';
+    }
+    
+    // Generate a 2-3 word title based on the description
+    let title = 'Road Hazard';
+    const lowerInput = userInput.toLowerCase();
+    
+    if (lowerInput.includes('ice') || lowerInput.includes('frost')) {
+      title = 'Ice Hazard';
+    } else if (lowerInput.includes('pothole') || lowerInput.includes('hole')) {
+      title = 'Pothole Alert';
+    } else if (lowerInput.includes('debris') || lowerInput.includes('trash') || lowerInput.includes('object')) {
+      title = 'Road Debris';
+    } else if (lowerInput.includes('water') || lowerInput.includes('flood') || lowerInput.includes('puddle')) {
+      title = 'Water Hazard';
+    } else if (lowerInput.includes('construction') || lowerInput.includes('work')) {
+      title = 'Construction Zone';
+    } else if (lowerInput.includes('accident') || lowerInput.includes('crash')) {
+      title = 'Accident Alert';
+    } else if (lowerInput.includes('animal') || lowerInput.includes('deer') || lowerInput.includes('dog')) {
+      title = 'Animal Hazard';
+    } else if (lowerInput.includes('oil') || lowerInput.includes('spill')) {
+      title = 'Spill Alert';
+    }
+    
+    return {
+      title,
+      hazardType: 'Road hazard',
+      description: cleanedText
+    };
   }
 
   async geocodeLocationWithContext(location: string, locationContext: LocationContext): Promise<{lat: number, lng: number} | null> {
