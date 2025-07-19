@@ -56,7 +56,13 @@ serve(async (req) => {
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    console.log('🔑 API KEY CHECK:');
+    console.log('  - Has API Key:', !!openAIApiKey);
+    console.log('  - API Key length:', openAIApiKey?.length || 0);
+    console.log('  - API Key prefix:', openAIApiKey?.substring(0, 10) || 'none');
+    
     if (!openAIApiKey) {
+      console.error('❌ OpenAI API key not found in environment variables');
       throw new Error('OpenAI API key not configured');
     }
 
@@ -213,6 +219,8 @@ SEVERITY: high=dangerous (ice,trees,accidents), medium=moderate (snow,constructi
     // Try OpenAI analysis first, but handle quota/API failures gracefully
     let analysis: HazardAnalysis;
     
+    console.log('🤖 ATTEMPTING OPENAI API CALL...');
+    
     try {
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -239,9 +247,19 @@ Please analyze this hazard report using all the context provided above and make 
         }),
       });
 
+      console.log('📡 OPENAI API RESPONSE:');
+      console.log('  - Status:', response.status);
+      console.log('  - Status Text:', response.statusText);
+      console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('OpenAI API error:', errorText);
+        console.error('❌ OpenAI API error details:', errorText);
+        console.error('❌ Full response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
         
         // Handle specific error types
         if (response.status === 429) {
