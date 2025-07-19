@@ -19,6 +19,7 @@ interface HazardReport {
 const HazardReporterCard = () => {
   const [hazards, setHazards] = useState<HazardReport[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedHazard, setSelectedHazard] = useState<HazardReport | null>(null);
 
   // Load initial hazards on mount
   useEffect(() => {
@@ -51,12 +52,15 @@ const HazardReporterCard = () => {
   const submitHazard = async (hazardData: { text: string; location?: any }) => {
     setIsSubmitting(true);
     try {
+      // Clean up the location address by removing duplicate pin emojis
+      const cleanAddress = hazardData.location?.address?.replace(/📍\s*📍/g, '📍')?.replace(/^📍\s*/, '');
+      
       // Prepare data for database insertion
       const insertData = {
         hazard_type: hazardData.text.split(' ').slice(0, 5).join(' '), // First few words as type
         description: hazardData.text,
         severity: 'medium' as const, // Default severity
-        location_address: hazardData.location?.address,
+        location_address: cleanAddress,
         location_lat: hazardData.location?.coordinates?.lat,
         location_lng: hazardData.location?.coordinates?.lng,
         user_id: (await supabase.auth.getUser()).data.user?.id || null,
@@ -93,6 +97,43 @@ const HazardReporterCard = () => {
     return `${hours} h ago`;
   };
 
+  if (selectedHazard) {
+    return (
+      <Card className="bg-gradient-winter shadow-snow border-accent/30 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
+            🚧 {selectedHazard.hazard_type}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <p className="text-sm text-foreground leading-relaxed">
+              {selectedHazard.description}
+            </p>
+            {selectedHazard.location_address && (
+              <p className="text-xs text-muted-foreground">
+                📍 {selectedHazard.location_address}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Reported {formatTimeAgo(selectedHazard.created_at)}
+            </p>
+          </div>
+          <div className="flex justify-start">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setSelectedHazard(null)}
+              className="bg-background/50 hover:bg-background/80"
+            >
+              ← Back
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="bg-gradient-winter shadow-snow border-accent/30 rounded-xl">
       <CardHeader className="pb-3">
@@ -118,9 +159,14 @@ const HazardReporterCard = () => {
               >
                 <span className="text-sm mt-0.5">❗</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground leading-tight">
-                    {hazard.description}
-                  </p>
+                  <button
+                    onClick={() => setSelectedHazard(hazard)}
+                    className="text-left w-full hover:bg-background/20 rounded-lg p-1 -m-1 transition-colors"
+                  >
+                    <p className="text-sm text-foreground leading-tight font-medium underline hover:no-underline">
+                      {hazard.hazard_type}
+                    </p>
+                  </button>
                   {hazard.location_address && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       📍 {hazard.location_address}
