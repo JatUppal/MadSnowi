@@ -67,12 +67,16 @@ LOCATION CONTEXT:`;
       const location = locationContext.lastKnownLocation;
       const timeAgo = location.timestamp ? Math.floor((Date.now() - location.timestamp) / (1000 * 60)) : 'unknown';
       
+      // Get Google Maps API key for reverse geocoding
+      const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+      
       // Use existing address or coordinates as fallback
       let userLocationAddress = location.address || `${location.lat}, ${location.lng}`;
       
       console.log(`🔍 REVERSE GEOCODING START:`);
       console.log(`  - Original coordinates: ${location.lat}, ${location.lng}`);
       console.log(`  - Original address: ${userLocationAddress}`);
+      console.log(`  - Google Maps API Key available: ${!!googleMapsApiKey}`);
       
       // Try to reverse geocode coordinates to get readable address (optional)
       if (googleMapsApiKey && userLocationAddress.includes('Location:')) {
