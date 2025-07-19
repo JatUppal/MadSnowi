@@ -214,6 +214,14 @@ export class AIService {
       .replace(/\bthier\b/gi, 'their')
       .replace(/\bteh\b/gi, 'the')
       .replace(/\band\s+and\b/gi, 'and')  // Remove duplicate 'and'
+      .replace(/\bbollingr\b/gi, 'Bollinger')  // Fix Bollinger Canyon
+      .replace(/\bsafway\b/gi, 'Safeway')      // Fix Safeway
+      .replace(/\bdangrous\b/gi, 'dangerous')   // Fix dangerous
+      .replace(/\bhazrd\b/gi, 'hazard')        // Fix hazard
+      .replace(/\bpothol\b/gi, 'pothole')      // Fix pothole
+      .replace(/\baccidnt\b/gi, 'accident')    // Fix accident
+      .replace(/\bconstructin\b/gi, 'construction') // Fix construction
+      .replace(/\bdowntwn\b/gi, 'downtown')    // Fix downtown
       .replace(/\s+/g, ' ');  // Clean up multiple spaces
     
     // Capitalize first letter
@@ -228,7 +236,9 @@ export class AIService {
     let title = 'Road Hazard';
     const lowerInput = userInput.toLowerCase();
     
-    if (lowerInput.includes('ice') || lowerInput.includes('frost')) {
+    if (lowerInput.includes('tree') && (lowerInput.includes('down') || lowerInput.includes('fallen'))) {
+      title = 'Fallen Tree';
+    } else if (lowerInput.includes('ice') || lowerInput.includes('frost')) {
       title = 'Ice Hazard';
     } else if (lowerInput.includes('pothole') || lowerInput.includes('hole')) {
       title = 'Pothole Alert';
