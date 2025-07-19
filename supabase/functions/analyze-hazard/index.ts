@@ -35,6 +35,40 @@ serve(async (req) => {
     const { userInput, locationContext } = await req.json();
     console.log('Analyzing hazard input:', userInput);
     console.log('Location context:', locationContext);
+    
+    // Handle special reverse geocoding request
+    if (userInput === 'reverse-geocode-only' && locationContext?.lastKnownLocation) {
+      const location = locationContext.lastKnownLocation;
+      const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+      
+      if (googleMapsApiKey) {
+        try {
+          console.log('🔍 REVERSE GEOCODING FOR USER LOCATION STORAGE...');
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${googleMapsApiKey}`;
+          const geocodeResponse = await fetch(geocodeUrl);
+          
+          if (geocodeResponse.ok) {
+            const geocodeData = await geocodeResponse.json();
+            if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
+              const reverseGeocodeResult = geocodeData.results[0].formatted_address;
+              console.log('✅ Reverse geocoding successful:', reverseGeocodeResult);
+              return new Response(
+                JSON.stringify({ reverseGeocodeResult }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+        } catch (error) {
+          console.log('⚠️ Reverse geocoding failed:', error);
+        }
+      }
+      
+      // Return original address if geocoding fails
+      return new Response(
+        JSON.stringify({ reverseGeocodeResult: location.address }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     console.log('🔑 API KEY CHECK:');

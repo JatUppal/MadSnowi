@@ -301,14 +301,41 @@ export class WeatherService {
       }
 
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           console.log('Geolocation successful:', position.coords);
           
           // 🎯 AUTOMATICALLY STORE LOCATION FOR AI USE
+          let userAddress = `Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
+          
+          // Try to reverse geocode to get actual address
+          try {
+            console.log('🔍 REVERSE GEOCODING USER LOCATION...');
+            const { data, error } = await supabase.functions.invoke('analyze-hazard', {
+              body: {
+                userInput: 'reverse-geocode-only',
+                locationContext: {
+                  lastKnownLocation: {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    address: userAddress,
+                    timestamp: Date.now()
+                  }
+                }
+              }
+            });
+            
+            if (data && data.reverseGeocodeResult) {
+              userAddress = data.reverseGeocodeResult;
+              console.log('✅ Got reverse geocoded address:', userAddress);
+            }
+          } catch (geocodeError) {
+            console.log('⚠️ Reverse geocoding failed, using coordinates:', geocodeError);
+          }
+          
           const userLocation = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
-            address: `Location: ${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`,
+            address: userAddress,
             timestamp: Date.now()
           };
           
