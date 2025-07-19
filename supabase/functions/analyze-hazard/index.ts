@@ -17,9 +17,12 @@ interface HazardAnalysis {
       lng: number;
     };
     confidence: 'high' | 'medium' | 'low';
+    source: 'gpt_guess' | 'user_location' | 'places_api' | 'exact_match';
+    reasoning?: string;
   } | null;
   severity: 'low' | 'medium' | 'high';
   needsLocationConfirmation: boolean;
+  aiReasoning?: string;
 }
 
 serve(async (req) => {
@@ -36,6 +39,12 @@ serve(async (req) => {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
+    }
+
+    // Get nearby places if user location is available
+    let nearbyPlaces = '';
+    if (locationContext?.lastKnownLocation) {
+      nearbyPlaces = await getNearbyPlaces(locationContext.lastKnownLocation.lat, locationContext.lastKnownLocation.lng);
     }
 
     // Build comprehensive context for AI analysis
@@ -81,16 +90,23 @@ LOCATION CONTEXT:`;
 ❌ NO LOCATION DATA: User has not shared any location information previously`;
     }
 
+    if (nearbyPlaces) {
+      systemPrompt += `
+🏪 NEARBY PLACES (within 1 mile of user):
+${nearbyPlaces}`;
+    }
+
     systemPrompt += `
 
 === AI ANALYSIS INSTRUCTIONS ===
 
 Your task is to:
 1. Correct any grammatical errors and spelling mistakes in the user's description
-2. Create a concise 2-3 word title for the hazard type
-3. Use ALL available context to make an educated guess about location
+2. Create a concise 2-4 word title for the hazard type (MUST be 2-4 words only)
+3. Use ALL available context including nearby places to make precise location guesses
 4. Format the address as a readable street address (not just coordinates)
-5. Only ask for user location if you genuinely cannot make a reasonable guess
+5. Provide confidence assessment and reasoning for location choices
+6. Only ask for user location if you genuinely cannot make a reasonable guess
 
 TEXT PROCESSING:
 - Fix spelling errors (e.g., "teh" → "the", "thier" → "their")
@@ -98,9 +114,10 @@ TEXT PROCESSING:
 - Make the description clear and professional
 - Keep the original meaning intact
 
-TITLE GENERATION:
-Create a 2-3 word title based on hazard type:
+TITLE GENERATION (CRITICAL - MUST BE 2-4 WORDS ONLY):
+Create a precise 2-4 word title with correct spelling:
 - Ice/frost → "Ice Hazard"
+- Fallen tree → "Fallen Tree"
 - Pothole → "Pothole Alert" 
 - Debris/trash → "Road Debris"
 - Water/flood → "Water Hazard"
@@ -108,17 +125,24 @@ Create a 2-3 word title based on hazard type:
 - Accident → "Accident Alert"
 - Animal → "Animal Hazard"
 - Oil spill → "Spill Alert"
+- Vehicle breakdown → "Vehicle Breakdown"
+- Road closure → "Road Closure"
 - Default → "Road Hazard"
 
 LOCATION INFERENCE PRIORITY (CRITICAL):
-1. **FIRST PRIORITY**: Extract specific location from user text
-   • "bellingham square park" → Find bellingham square park coordinates using geocoding
+1. **FIRST PRIORITY**: Extract specific location from user text and match with nearby places
+   • "7/11" → Check nearby places list for exact 7-Eleven match
+   • "Safeway" → Find Safeway in nearby places list
+   • "tree down near 7/11 in Dublin" → Find Dublin 7-Eleven from context
    • "Highway 101" → Find Highway 101 in user's area  
    • "downtown" → Find downtown relative to user's known locations
-   • "Main Street" → Find Main Street near user's context
 
-2. **USE CONTEXT TO NARROW DOWN**: Use user's location context to resolve ambiguity
-   • If user says "bellingham square park" → Find the one closest to user's known location
+2. **USE NEARBY PLACES DATA**: Prioritize matches from nearby places list
+   • If user mentions "Safeway" and there's a Safeway in nearby places → Use that exact location
+   • Match business names, landmarks, and addresses from nearby places first
+   • Use nearby places to disambiguate common names (multiple Starbucks, etc.)
+
+3. **USE CONTEXT TO NARROW DOWN**: Use user's location context to resolve ambiguity
    • Multiple matches exist → Pick closest to user's coordinates
    • User context helps disambiguate common place names
 
@@ -147,14 +171,14 @@ Only set needsLocationConfirmation=true if:
 
 RESPONSE FORMAT (JSON only):
 {
-  "title": "2-3 word hazard title",
+  "title": "2-4 word hazard title with correct spelling",
   "hazardType": "Brief description of hazard type",
-  "description": "Corrected and cleaned user input with proper grammar",
+  "description": "Corrected and cleaned user input with proper grammar and spelling",
   "location": {
-    "address": "📍 readable street address or area description", 
+    "address": "📍 readable street address", 
     "coordinates": {"lat": number, "lng": number} or null,
     "confidence": "high|medium|low",
-    "source": "extracted_from_text|inferred_from_last_known|inferred_from_route|inferred_from_context|educated_guess",
+    "source": "gpt_guess|user_location|places_api|exact_match",
     "reasoning": "explanation of how you determined this location"
   } or null,
   "severity": "low|medium|high",
@@ -220,13 +244,27 @@ Please analyze this hazard report using all the context provided above and make 
       };
     }
 
-    // If we have a location address, try to geocode it
-    if (analysis.location?.address) {
-      const geocodeResult = await geocodeAddress(analysis.location.address);
-      if (geocodeResult) {
-        analysis.location.coordinates = geocodeResult;
-        analysis.location.confidence = 'high';
-        analysis.needsLocationConfirmation = false;
+    // Enhanced location processing with Google Places API
+    if (analysis.location) {
+      // If AI provided a rough location, try to enhance it with Google Places
+      if (analysis.location.confidence === 'low' || analysis.location.confidence === 'medium') {
+        const enhancedLocation = await enhanceLocationWithPlaces(analysis.location.address, locationContext);
+        if (enhancedLocation) {
+          analysis.location = enhancedLocation;
+          analysis.needsLocationConfirmation = false;
+        }
+      }
+      
+      // If we still need geocoding, try standard geocoding
+      if (!analysis.location.coordinates && analysis.location.address) {
+        const geocodeResult = await geocodeAddress(analysis.location.address);
+        if (geocodeResult) {
+          analysis.location.coordinates = geocodeResult;
+          if (analysis.location.confidence === 'low') {
+            analysis.location.confidence = 'medium';
+          }
+          analysis.needsLocationConfirmation = false;
+        }
       }
     }
 
@@ -249,6 +287,81 @@ Please analyze this hazard report using all the context provided above and make 
     );
   }
 });
+
+async function getNearbyPlaces(lat: number, lng: number): Promise<string> {
+  try {
+    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    if (!googleMapsApiKey) {
+      console.log('Google Maps API key not available for nearby places');
+      return '';
+    }
+
+    const radius = 1609; // 1 mile in meters
+    const placesUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&key=${googleMapsApiKey}`;
+    
+    const response = await fetch(placesUrl);
+    if (!response.ok) {
+      console.error('Places API error:', response.status);
+      return '';
+    }
+
+    const data = await response.json();
+    if (data.status === 'OK' && data.results.length > 0) {
+      // Format places for AI context
+      const places = data.results.slice(0, 20).map((place: any) => {
+        return `• ${place.name} (${place.types[0]?.replace(/_/g, ' ')}) - ${place.vicinity}`;
+      }).join('\n');
+      
+      console.log('Found nearby places:', places);
+      return places;
+    }
+    
+    return '';
+  } catch (error) {
+    console.error('Error getting nearby places:', error);
+    return '';
+  }
+}
+
+async function enhanceLocationWithPlaces(locationText: string | undefined, locationContext: any): Promise<any | null> {
+  try {
+    if (!locationText || !locationContext?.lastKnownLocation) return null;
+    
+    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    if (!googleMapsApiKey) return null;
+
+    // Use Google Places Text Search to find specific places mentioned by user
+    const query = locationText.replace('📍', '').trim();
+    const userLat = locationContext.lastKnownLocation.lat;
+    const userLng = locationContext.lastKnownLocation.lng;
+    
+    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=8000&key=${googleMapsApiKey}`;
+    
+    const response = await fetch(textSearchUrl);
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (data.status === 'OK' && data.results.length > 0) {
+      const place = data.results[0]; // Take the closest/most relevant result
+      
+      return {
+        address: `📍 ${place.formatted_address}`,
+        coordinates: {
+          lat: place.geometry.location.lat,
+          lng: place.geometry.location.lng
+        },
+        confidence: 'high' as const,
+        source: 'places_api' as const,
+        reasoning: `Found exact match using Google Places: ${place.name}`
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error enhancing location with Places API:', error);
+    return null;
+  }
+}
 
 async function geocodeAddress(address: string): Promise<{lat: number, lng: number} | null> {
   try {
