@@ -134,6 +134,9 @@ Create a precise 2-4 word title with correct spelling:
 - Vehicle breakdown → "Vehicle Breakdown"
 - Road closure → "Road Closure"
 - Default → "Road Hazard"
+- NEVER end the title with ":" or suffixes like "There"
+- The title should not include vague terms like "Here", "There", "Nearby", "Location", or "by the user"
+- Always generate a clean, specific, informative title (2-4 words)
 
 LOCATION INFERENCE PRIORITY (CRITICAL):
 1. **FIRST PRIORITY**: Extract specific location from user text and match with nearby places
@@ -191,6 +194,9 @@ RESPONSE FORMAT (JSON only):
   "needsLocationConfirmation": boolean,
   "aiReasoning": "Brief explanation of your decision process"
 }
+
+Do NOT include vague location descriptors like "There", "Here", or "Nearby" in the title or address.
+Always generate a clean, specific, informative title (2-4 words).
 
 HAZARD TYPES: ice patches, snow drifts, fallen trees, accidents, potholes, construction, flooding, debris, visibility issues
 SEVERITY: high=dangerous (ice,trees,accidents), medium=moderate (snow,construction), low=minor (potholes,small debris)`;
@@ -389,7 +395,7 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
 
     // Extract business/place names and street names from input
     const businessMatch = userInput.match(/\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|7-eleven|shell|chevron)\b/gi);
-    const streetMatch = userInput.match(/\b(bollinger|dougherty|dublin|canyon|road|street|avenue|blvd|boulevard)\b/gi);
+    const streetGuess = userInput.match(/\b(\w+\s+(road|rd|avenue|ave|parkway|blvd|boulevard|street|st|lane|ln))\b/gi)?.[0] || '';
     
     if (!businessMatch) return null;
 
@@ -399,10 +405,9 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     
     // Build a more specific query including street information if available
     let query = business;
-    if (streetMatch && streetMatch.length > 0) {
-      // Include street context in the search
-      const streetContext = streetMatch.join(' ');
-      query = `${business} ${streetContext}`;
+    if (streetGuess) {
+      // Include street context in the search for better matching
+      query = `${business} ${streetGuess}`;
     }
     
     // Use a larger radius to find places further away but still prioritize by distance
