@@ -67,21 +67,30 @@ LOCATION CONTEXT:`;
       const location = locationContext.lastKnownLocation;
       const timeAgo = location.timestamp ? Math.floor((Date.now() - location.timestamp) / (1000 * 60)) : 'unknown';
       
-      // Reverse geocode coordinates to get readable address
+      // Use existing address or coordinates as fallback
       let userLocationAddress = location.address || `${location.lat}, ${location.lng}`;
       
-      if (googleMapsApiKey) {
+      // Try to reverse geocode coordinates to get readable address (optional)
+      if (googleMapsApiKey && userLocationAddress.includes('Location:')) {
         try {
           const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${googleMapsApiKey}`;
           const geocodeResponse = await fetch(geocodeUrl);
-          const geocodeData = await geocodeResponse.json();
           
-          if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
-            userLocationAddress = geocodeData.results[0].formatted_address;
-            console.log(`🗺️ Reverse geocoded user location: ${userLocationAddress}`);
+          if (geocodeResponse.ok) {
+            const geocodeData = await geocodeResponse.json();
+            
+            if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
+              userLocationAddress = geocodeData.results[0].formatted_address;
+              console.log(`🗺️ Reverse geocoded user location: ${userLocationAddress}`);
+            } else {
+              console.log(`⚠️ Geocoding failed with status: ${geocodeData.status}`);
+            }
+          } else {
+            console.log(`⚠️ Geocoding API request failed: ${geocodeResponse.status}`);
           }
         } catch (error) {
           console.log(`⚠️ Failed to reverse geocode user location: ${error.message}`);
+          // Continue with original address - don't let geocoding failure break the function
         }
       }
       
