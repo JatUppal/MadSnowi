@@ -434,7 +434,18 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
           place.geometry.location.lat, place.geometry.location.lng
         );
         
-        console.log(`🔍 Place: ${place.name} at ${place.formatted_address}, Distance: ${distance.toFixed(2)} km`);
+        // Calculate scoring factors for better matching
+        const nameScore = place.name?.toLowerCase().includes(business.toLowerCase()) ? 1 : 0;
+        const addressScore = streetGuess && place.formatted_address?.toLowerCase().includes(streetGuess.toLowerCase()) ? 0.5 : 0;
+        const distanceScore = Math.max(0, 1 - (distance / 10)); // Normalize distance to 0-1 scale
+        const totalScore = nameScore + addressScore + distanceScore;
+        
+        console.log(`🔍 Evaluating place: ${place.name} at ${place.formatted_address}`);
+        console.log(`  - Name score: ${nameScore}`);
+        console.log(`  - Address score: ${addressScore}`);
+        console.log(`  - Distance score: ${distanceScore.toFixed(2)}`);
+        console.log(`  - Total score: ${totalScore.toFixed(2)}`);
+        console.log(`  - Distance: ${distance.toFixed(2)} km`);
         
         if (distance < shortestDistance) {
           shortestDistance = distance;
