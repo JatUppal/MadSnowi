@@ -260,7 +260,19 @@ Please analyze this hazard report using all the context provided above and make 
 
       // Parse the JSON response from OpenAI
       try {
-        analysis = JSON.parse(aiResponse);
+        const rawAnalysis = JSON.parse(aiResponse);
+        
+        // Clean up the title to remove colons and extra text
+        const cleanTitle = (rawAnalysis.title || 'Road Hazard')
+          .replace(/:\s*.*$/, '') // Remove colon and everything after it
+          .trim();
+        
+        analysis = {
+          ...rawAnalysis,
+          title: cleanTitle,
+          hazardType: cleanTitle
+        };
+        
         console.log('✅ OPENAI ANALYSIS SUCCESS:', analysis);
       } catch (parseError) {
         console.error('Failed to parse OpenAI response:', parseError);
@@ -375,32 +387,67 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!googleMapsApiKey) return null;
 
-    // Extract business/place names from input
+    // Extract business/place names and street names from input
     const businessMatch = userInput.match(/\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|7-eleven|shell|chevron)\b/gi);
+    const streetMatch = userInput.match(/\b(bollinger|dougherty|dublin|canyon|road|street|avenue|blvd|boulevard)\b/gi);
+    
     if (!businessMatch) return null;
 
-    const query = businessMatch[0];
+    const business = businessMatch[0];
     const userLat = locationContext.lastKnownLocation.lat;
     const userLng = locationContext.lastKnownLocation.lng;
     
-    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=8000&key=${googleMapsApiKey}`;
+    // Build a more specific query including street information if available
+    let query = business;
+    if (streetMatch && streetMatch.length > 0) {
+      // Include street context in the search
+      const streetContext = streetMatch.join(' ');
+      query = `${business} ${streetContext}`;
+    }
+    
+    // Use a larger radius to find places further away but still prioritize by distance
+    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLat},${userLng}&radius=16000&key=${googleMapsApiKey}`;
+    
+    console.log('🔍 Enhanced location search query:', query);
+    console.log('🔍 Search URL:', textSearchUrl.replace(googleMapsApiKey, '[REDACTED]'));
     
     const response = await fetch(textSearchUrl);
     if (!response.ok) return null;
 
     const data = await response.json();
+    console.log('🔍 Places API response status:', data.status);
+    console.log('🔍 Number of results:', data.results?.length || 0);
+    
     if (data.status === 'OK' && data.results.length > 0) {
-      const place = data.results[0];
+      // Find the closest result to user's location
+      let bestPlace = data.results[0];
+      let shortestDistance = Number.MAX_VALUE;
+      
+      for (const place of data.results.slice(0, 5)) { // Check top 5 results
+        const distance = calculateDistance(
+          userLat, userLng,
+          place.geometry.location.lat, place.geometry.location.lng
+        );
+        
+        console.log(`🔍 Place: ${place.name} at ${place.formatted_address}, Distance: ${distance.toFixed(2)} km`);
+        
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          bestPlace = place;
+        }
+      }
+      
+      console.log(`🎯 Selected closest place: ${bestPlace.name} (${shortestDistance.toFixed(2)} km away)`);
       
       return {
-        address: `📍 ${place.formatted_address}`,
+        address: `📍 ${bestPlace.formatted_address}`,
         coordinates: {
-          lat: place.geometry.location.lat,
-          lng: place.geometry.location.lng
+          lat: bestPlace.geometry.location.lat,
+          lng: bestPlace.geometry.location.lng
         },
         confidence: 'high' as const,
         source: 'places_api' as const,
-        reasoning: `Found exact match using Google Places: ${place.name}`
+        reasoning: `Found closest match using Google Places: ${bestPlace.name} (${shortestDistance.toFixed(1)} km away)`
       };
     }
     
@@ -409,6 +456,18 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     console.error('Error enhancing location with Places API:', error);
     return null;
   }
+}
+
+// Helper function to calculate distance between two points
+function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
 }
 
 async function getNearbyPlaces(lat: number, lng: number): Promise<string> {
