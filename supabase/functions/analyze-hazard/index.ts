@@ -66,8 +66,27 @@ LOCATION CONTEXT:`;
       hasLocationData = true;
       const location = locationContext.lastKnownLocation;
       const timeAgo = location.timestamp ? Math.floor((Date.now() - location.timestamp) / (1000 * 60)) : 'unknown';
+      
+      // Reverse geocode coordinates to get readable address
+      let userLocationAddress = location.address || `${location.lat}, ${location.lng}`;
+      
+      if (googleMapsApiKey) {
+        try {
+          const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${googleMapsApiKey}`;
+          const geocodeResponse = await fetch(geocodeUrl);
+          const geocodeData = await geocodeResponse.json();
+          
+          if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
+            userLocationAddress = geocodeData.results[0].formatted_address;
+            console.log(`🗺️ Reverse geocoded user location: ${userLocationAddress}`);
+          }
+        } catch (error) {
+          console.log(`⚠️ Failed to reverse geocode user location: ${error.message}`);
+        }
+      }
+      
       systemPrompt += `
-📍 LAST KNOWN LOCATION: ${location.address || `${location.lat}, ${location.lng}`}
+📍 LAST KNOWN LOCATION: ${userLocationAddress}
    - Coordinates: ${location.lat}, ${location.lng}
    - Captured: ${timeAgo} minutes ago
    - Confidence: This is where the user was recently located`;
