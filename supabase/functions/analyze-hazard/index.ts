@@ -191,57 +191,68 @@ SEVERITY: high=dangerous (ice,trees,accidents), medium=moderate (snow,constructi
 
     console.log('System prompt with context:', systemPrompt);
 
-    // Use OpenAI to analyze the hazard report with full context
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: `USER HAZARD REPORT: "${userInput}"
+    // Try OpenAI analysis first, but handle quota/API failures gracefully
+    let analysis: HazardAnalysis;
+    
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: `USER HAZARD REPORT: "${userInput}"
 
 Please analyze this hazard report using all the context provided above and make your best guess about the location.`
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 1000,
-      }),
-    });
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 1000,
+        }),
+      });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('OpenAI API error:', error);
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('OpenAI API error:', errorText);
+        
+        // Handle specific error types
+        if (response.status === 429) {
+          console.log('OpenAI quota exceeded, using smart fallback analysis');
+          throw new Error('QUOTA_EXCEEDED');
+        } else if (response.status === 401) {
+          console.log('OpenAI API key invalid, using fallback analysis');
+          throw new Error('INVALID_API_KEY');
+        } else {
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
+      }
 
-    const data = await response.json();
-    const aiResponse = data.choices[0].message.content;
-    console.log('OpenAI response:', aiResponse);
+      const data = await response.json();
+      const aiResponse = data.choices[0].message.content;
+      console.log('OpenAI response:', aiResponse);
 
-    // Parse the JSON response from OpenAI
-    let analysis: HazardAnalysis;
-    try {
-      analysis = JSON.parse(aiResponse);
-    } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
-      // Fallback to basic analysis if AI response is malformed
-      analysis = {
-        title: 'Road Hazard',
-        hazardType: 'Road hazard reported',
-        description: userInput,
-        location: null,
-        severity: 'medium',
-        needsLocationConfirmation: true
-      };
+      // Parse the JSON response from OpenAI
+      try {
+        analysis = JSON.parse(aiResponse);
+      } catch (parseError) {
+        console.error('Failed to parse OpenAI response:', parseError);
+        throw new Error('PARSE_ERROR');
+      }
+      
+    } catch (aiError) {
+      console.log('OpenAI analysis failed, using enhanced fallback logic:', aiError.message);
+      
+      // Enhanced fallback analysis using Google Places Text Search
+      analysis = await createFallbackAnalysis(userInput, locationContext);
     }
 
     // Enhanced location processing with Google Places API
@@ -394,6 +405,182 @@ async function geocodeAddress(address: string): Promise<{lat: number, lng: numbe
     }
   } catch (error) {
     console.error('Geocoding error:', error);
+    return null;
+  }
+}
+
+async function createFallbackAnalysis(userInput: string, locationContext: any): Promise<HazardAnalysis> {
+  console.log('Creating enhanced fallback analysis for:', userInput);
+  
+  // Clean and process the text
+  const processedText = processHazardText(userInput);
+  
+  // Enhanced location extraction using Google Places Text Search
+  let location = null;
+  let needsConfirmation = true;
+  
+  // Extract potential place names from user input
+  const placeKeywords = extractPlaceKeywords(userInput);
+  console.log('Extracted place keywords:', placeKeywords);
+  
+  if (placeKeywords.length > 0 && locationContext?.lastKnownLocation) {
+    // Try Google Places Text Search for each keyword
+    for (const keyword of placeKeywords) {
+      console.log('Searching for place:', keyword);
+      const placeResult = await searchPlaceWithContext(keyword, locationContext.lastKnownLocation);
+      
+      if (placeResult) {
+        location = {
+          address: `📍 ${placeResult.formatted_address}`,
+          coordinates: placeResult.coordinates,
+          confidence: 'high' as const,
+          source: 'places_api' as const,
+          reasoning: `Found using Google Places search: ${placeResult.name}`
+        };
+        needsConfirmation = false;
+        console.log('Successfully found place using Google Places:', placeResult);
+        break;
+      }
+    }
+  }
+  
+  // Fallback to user location if no specific place found
+  if (!location && locationContext?.lastKnownLocation) {
+    const userLoc = locationContext.lastKnownLocation;
+    location = {
+      address: userLoc.address || `📍 Location: ${userLoc.lat.toFixed(4)}, ${userLoc.lng.toFixed(4)}`,
+      coordinates: { lat: userLoc.lat, lng: userLoc.lng },
+      confidence: 'medium' as const,
+      source: 'user_location' as const,
+      reasoning: 'Used user location as no specific place could be identified'
+    };
+    needsConfirmation = false;
+  }
+  
+  return {
+    title: processedText.title,
+    hazardType: processedText.hazardType,
+    description: processedText.description,
+    location,
+    severity: processedText.severity,
+    needsLocationConfirmation: needsConfirmation,
+    aiReasoning: 'Analysis created using fallback logic due to AI service unavailability'
+  };
+}
+
+function processHazardText(userInput: string): { title: string; hazardType: string; description: string; severity: 'low' | 'medium' | 'high' } {
+  // Clean up text
+  let cleanedText = userInput.trim()
+    .replace(/\bi\b/g, 'I')
+    .replace(/\btheres\b/gi, 'there is')
+    .replace(/\bthier\b/gi, 'their')
+    .replace(/\bteh\b/gi, 'the')
+    .replace(/\bwalgrens\b/gi, 'Walgreens')
+    .replace(/\bbollingr\b/gi, 'Bollinger')
+    .replace(/\s+/g, ' ');
+  
+  // Capitalize first letter and add period
+  cleanedText = cleanedText.charAt(0).toUpperCase() + cleanedText.slice(1);
+  if (!cleanedText.match(/[.!?]$/)) {
+    cleanedText += '.';
+  }
+  
+  // Generate title (2-4 words)
+  const lowerInput = userInput.toLowerCase();
+  let title = 'Road Hazard';
+  let severity: 'low' | 'medium' | 'high' = 'medium';
+  
+  if (lowerInput.includes('tree') && (lowerInput.includes('down') || lowerInput.includes('fell'))) {
+    title = 'Fallen Tree';
+    severity = 'high';
+  } else if (lowerInput.includes('ice') || lowerInput.includes('frost')) {
+    title = 'Ice Hazard';
+    severity = 'high';
+  } else if (lowerInput.includes('accident') || lowerInput.includes('crash')) {
+    title = 'Accident Alert';
+    severity = 'high';
+  } else if (lowerInput.includes('construction')) {
+    title = 'Construction Zone';
+    severity = 'medium';
+  } else if (lowerInput.includes('pothole')) {
+    title = 'Pothole Alert';
+    severity = 'low';
+  } else if (lowerInput.includes('debris') || lowerInput.includes('trash')) {
+    title = 'Road Debris';
+    severity = 'medium';
+  }
+  
+  return {
+    title,
+    hazardType: 'Road hazard',
+    description: cleanedText,
+    severity
+  };
+}
+
+function extractPlaceKeywords(userInput: string): string[] {
+  const keywords: string[] = [];
+  const input = userInput.toLowerCase();
+  
+  // Common business/place patterns
+  const businessPatterns = [
+    /\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|burger king|taco bell)\b/g,
+    /\b(shell|chevron|exxon|bp|gas station)\b/g,
+    /\b(home depot|lowes?|costco|best buy)\b/g
+  ];
+  
+  // Street/road patterns
+  const streetPatterns = [
+    /\b([a-zA-Z\s]+(?:road|rd|street|st|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|way))\b/gi
+  ];
+  
+  // Extract business names
+  businessPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(input)) !== null) {
+      keywords.push(match[0].trim());
+    }
+  });
+  
+  // Extract street names
+  streetPatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(userInput)) !== null) {
+      keywords.push(match[0].trim());
+    }
+  });
+  
+  return [...new Set(keywords)]; // Remove duplicates
+}
+
+async function searchPlaceWithContext(query: string, userLocation: {lat: number, lng: number}): Promise<any | null> {
+  try {
+    const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    if (!googleMapsApiKey) return null;
+    
+    // Use Google Places Text Search with user location bias
+    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${userLocation.lat},${userLocation.lng}&radius=8000&key=${googleMapsApiKey}`;
+    
+    const response = await fetch(searchUrl);
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    if (data.status === 'OK' && data.results.length > 0) {
+      const place = data.results[0];
+      
+      return {
+        name: place.name,
+        formatted_address: place.formatted_address,
+        coordinates: {
+          lat: place.geometry.location.lat,
+          lng: place.geometry.location.lng
+        }
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error searching place with context:', error);
     return null;
   }
 }
