@@ -124,7 +124,9 @@ export class AIService {
             
             // Set confidence based on whether we found the actual location or fell back to user location
             const confidence: 'high' | 'medium' | 'low' = isUserLocationFallback ? 'medium' : 'high';
-            const addressPrefix = isUserLocationFallback ? `${extractedLocation} (estimated near user location)` : (fullAddressInfo?.formatted_address || extractedLocation);
+            const addressPrefix = isUserLocationFallback ? 
+              `📍 Near user location` : 
+              `📍 ${fullAddressInfo?.formatted_address || extractedLocation}`;
             
             fallbackLocation = {
               address: addressPrefix,
@@ -307,15 +309,29 @@ export class AIService {
       // Schools
       'dougherty valley high school': { 
         lat: 37.7184, lng: -121.8282, 
-        fullAddress: 'Dougherty Valley High School, 10550 Albion Rd, San Ramon, CA 94582' 
+        fullAddress: '10550 Albion Rd, San Ramon, CA 94582' 
       },
       'san ramon valley high school': { 
         lat: 37.7622, lng: -121.9444, 
-        fullAddress: 'San Ramon Valley High School, 501 Danville Blvd, Danville, CA 94526' 
+        fullAddress: '501 Danville Blvd, Danville, CA 94526' 
       },
       'california high school': { 
         lat: 37.7858, lng: -121.9247, 
-        fullAddress: 'California High School, 9870 Broadmoor Dr, San Ramon, CA 94583' 
+        fullAddress: '9870 Broadmoor Dr, San Ramon, CA 94583' 
+      },
+      
+      // Shopping centers and stores
+      'bollinger canyon safeway': {
+        lat: 37.7564, lng: -121.9185,
+        fullAddress: '18667 Bollinger Canyon Rd, San Ramon, CA 94583'
+      },
+      'safeway': {
+        lat: 37.7564, lng: -121.9185,
+        fullAddress: '18667 Bollinger Canyon Rd, San Ramon, CA 94583'
+      },
+      'bollinger canyon': {
+        lat: 37.7564, lng: -121.9185,
+        fullAddress: 'Bollinger Canyon Rd, San Ramon, CA 94583'
       },
       
       // Parks
@@ -397,6 +413,12 @@ export class AIService {
         addressInfo.country = 'United States';
       } else if (Math.abs(coordinates.lat - 37.7858) < 0.01 && Math.abs(coordinates.lng - (-121.9247)) < 0.01) {
         addressInfo.formatted_address = 'California High School, 9870 Broadmoor Dr, San Ramon, CA 94583';
+        addressInfo.city = 'San Ramon';
+        addressInfo.state = 'California';
+        addressInfo.zip = '94583';
+        addressInfo.country = 'United States';
+      } else if (Math.abs(coordinates.lat - 37.7564) < 0.01 && Math.abs(coordinates.lng - (-121.9185)) < 0.01) {
+        addressInfo.formatted_address = '18667 Bollinger Canyon Rd, San Ramon, CA 94583';
         addressInfo.city = 'San Ramon';
         addressInfo.state = 'California';
         addressInfo.zip = '94583';
