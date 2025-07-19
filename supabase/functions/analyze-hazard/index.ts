@@ -32,9 +32,28 @@ serve(async (req) => {
   }
 
   try {
-    const { userInput, locationContext } = await req.json();
+    const { userInput, locationContext, geocodeOnly, placesSearchOnly } = await req.json();
     console.log('Analyzing hazard input:', userInput);
     console.log('Location context:', locationContext);
+
+    // Handle special requests
+    if (placesSearchOnly) {
+      const placeQuery = userInput.replace('Search place: ', '');
+      const placeResult = await searchPlaceWithContext(placeQuery, locationContext.lastKnownLocation);
+      return new Response(JSON.stringify({ place: placeResult }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (geocodeOnly) {
+      const locationQuery = userInput.replace('Find location: ', '');
+      const coords = await geocodeAddress(locationQuery);
+      return new Response(JSON.stringify({ 
+        location: coords ? { coordinates: coords } : null 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {

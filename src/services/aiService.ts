@@ -58,19 +58,37 @@ export class AIService {
       // Smart fallback: try to extract location from user input text
       const inputLower = userInput.toLowerCase();
       
-      // Extract potential place names from the text
+      // Enhanced pattern matching for better location extraction
       const placePatterns = [
-        /\b([a-zA-Z\s]+(?:park|square|plaza|center|mall|station))\b/gi,
-        /\b([a-zA-Z\s]+(?:street|road|avenue|highway|boulevard|drive|lane|way))\b/gi,
-        /\b(downtown|uptown|midtown)\b/gi,
-        /\b([a-zA-Z\s]+(?:hospital|school|university|college|library|store))\b/gi
+        // Business names with location context
+        /\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?)\s*(?:off|on|near|at|by)?\s*([a-zA-Z\s]+(?:road|rd|street|st|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|way))\b/gi,
+        // Business names alone
+        /\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|gas station|7-eleven|shell|chevron)\b/gi,
+        // Street names with descriptors
+        /\b([a-zA-Z\s]+(?:road|rd|street|st|avenue|ave|boulevard|blvd|highway|hwy|drive|dr|lane|ln|way))\b/gi,
+        // Parks and landmarks
+        /\b([a-zA-Z\s]+(?:park|square|plaza|center|mall|station|school|hospital|library))\b/gi,
+        // General areas
+        /\b(downtown|uptown|midtown)\b/gi
       ];
       
       let extractedLocation = null;
+      
+      // Try more specific patterns first (business + street)
       for (const pattern of placePatterns) {
-        const match = userInput.match(pattern);
-        if (match) {
-          extractedLocation = match[0].trim();
+        const matches = [...userInput.matchAll(pattern)];
+        if (matches.length > 0) {
+          // For business + street pattern, combine both parts
+          if (pattern.source.includes('walgreens|cvs|safeway')) {
+            const match = matches[0];
+            if (match[2]) { // Has street name
+              extractedLocation = `${match[1].trim()} ${match[2].trim()}`;
+            } else {
+              extractedLocation = match[1].trim();
+            }
+          } else {
+            extractedLocation = matches[0][0].trim();
+          }
           console.log('Extracted location from text:', extractedLocation);
           break;
         }
@@ -87,89 +105,109 @@ export class AIService {
       if (extractedLocation && hasLocationData) {
         console.log('Attempting to geocode extracted location:', extractedLocation);
         
-        // Try to geocode the extracted location using user's context for area
+        // Try Google Places Text Search first for better location resolution
         try {
-          console.log('🔍 ATTEMPTING GEOCODING:');
+          console.log('🔍 ATTEMPTING GOOGLE PLACES TEXT SEARCH:');
           console.log('  - Extracted Location:', extractedLocation);
           console.log('  - User Context:', locationContext);
           
-          const geocodedCoords = await this.geocodeLocationWithContext(
+          const placesResult = await this.searchPlaceWithGooglePlaces(
             extractedLocation, 
-            locationContext
+            locationContext.lastKnownLocation
           );
           
-          if (geocodedCoords) {
-            // Check if coordinates match user location (indicating fallback to user location)
-            const userCoords = locationContext.lastKnownLocation || 
-                              locationContext.routeStartLocation || 
-                              locationContext.routeDestinationLocation;
-            
-            const isUserLocationFallback = userCoords && 
-              Math.abs(geocodedCoords.lat - userCoords.lat) < 0.001 && 
-              Math.abs(geocodedCoords.lng - userCoords.lng) < 0.001;
-            
-            // Try to get full address information
-            const fullAddressInfo = await this.getFullAddressInfo(geocodedCoords);
-            
-            console.log('✅ GEOCODING SUCCESS:');
-            console.log('  - Input Location:', extractedLocation);
-            console.log('  - Found Coordinates:', geocodedCoords);
-            console.log('  - Is User Location Fallback:', isUserLocationFallback);
-            console.log('  - Full Address Info:', fullAddressInfo);
-            console.log('  - Street Address:', fullAddressInfo?.formatted_address || 'Not available');
-            console.log('  - City:', fullAddressInfo?.city || 'Not available');
-            console.log('  - State:', fullAddressInfo?.state || 'Not available');
-            console.log('  - ZIP Code:', fullAddressInfo?.zip || 'Not available');
-            console.log('  - Country:', fullAddressInfo?.country || 'Not available');
-            
-            // Set confidence based on whether we found the actual location or fell back to user location
-            const confidence: 'high' | 'medium' | 'low' = isUserLocationFallback ? 'medium' : 'high';
-            const addressPrefix = isUserLocationFallback ? 
-              `📍 Near user location` : 
-              `📍 ${fullAddressInfo?.formatted_address || extractedLocation}`;
+          if (placesResult) {
+            console.log('✅ GOOGLE PLACES SUCCESS:');
+            console.log('  - Found Place:', placesResult.name);
+            console.log('  - Address:', placesResult.formatted_address);
+            console.log('  - Coordinates:', placesResult.coordinates);
             
             fallbackLocation = {
-              address: addressPrefix,
-              coordinates: geocodedCoords,
-              confidence: confidence,
-              source: isUserLocationFallback ? 'fallback_estimated_near_user' : 'fallback_geocoded'
+              address: `📍 ${placesResult.formatted_address}`,
+              coordinates: placesResult.coordinates,
+              confidence: 'high' as const,
+              source: 'google_places_fallback' as const
             };
             needsConfirmation = false;
             
-            console.log('📍 FINAL LOCATION TO BE STORED:');
-            console.log('  - Address:', fallbackLocation.address);
-            console.log('  - Latitude:', fallbackLocation.coordinates.lat);
-            console.log('  - Longitude:', fallbackLocation.coordinates.lng);
-            console.log('  - Confidence:', fallbackLocation.confidence);
-            console.log('  - Reasoning:', isUserLocationFallback ? 'Used user location as fallback' : 'Found actual location coordinates');
+            console.log('📍 PLACES API RESULT STORED:');
+            console.log('  - Final Address:', fallbackLocation.address);
+            console.log('  - Final Coordinates:', fallbackLocation.coordinates);
+            console.log('  - Confidence: HIGH (Google Places match)');
             
           } else {
-            throw new Error('Geocoding returned null coordinates');
+            throw new Error('No Google Places results found');
           }
-        } catch (geocodeError) {
-          console.log('❌ GEOCODING FAILED:');
-          console.log('  - Error:', geocodeError);
-          console.log('  - Falling back to user location as estimate');
+        } catch (placesError) {
+          console.log('❌ GOOGLE PLACES FAILED, trying basic geocoding:', placesError);
           
-          // Fallback to user location with mention of intended place
-          const userCoords = locationContext.lastKnownLocation || 
-                           locationContext.routeStartLocation || 
-                           locationContext.routeDestinationLocation;
-          
-          console.log('📍 USING USER LOCATION FALLBACK:');
-          console.log('  - User Coordinates:', userCoords);
-          console.log('  - Intended Location:', extractedLocation);
-          
-          fallbackLocation = {
-            address: `${extractedLocation} (estimated near user location)`,
-            coordinates: {
-              lat: userCoords.lat,
-              lng: userCoords.lng
-            },
-            confidence: 'medium' as const,
-            source: 'fallback_estimated_near_user' as const
-          };
-          needsConfirmation = false;
+          // Fallback to basic geocoding if Google Places fails
+          try {
+            const geocodedCoords = await this.geocodeLocationWithContext(
+              extractedLocation, 
+              locationContext
+            );
+            
+            if (geocodedCoords) {
+              // Check if coordinates match user location (indicating fallback to user location)
+              const userCoords = locationContext.lastKnownLocation || 
+                                locationContext.routeStartLocation || 
+                                locationContext.routeDestinationLocation;
+              
+              const isUserLocationFallback = userCoords && 
+                Math.abs(geocodedCoords.lat - userCoords.lat) < 0.001 && 
+                Math.abs(geocodedCoords.lng - userCoords.lng) < 0.001;
+              
+              // Try to get full address information
+              const fullAddressInfo = await this.getFullAddressInfo(geocodedCoords);
+              
+              console.log('✅ BASIC GEOCODING SUCCESS:');
+              console.log('  - Input Location:', extractedLocation);
+              console.log('  - Found Coordinates:', geocodedCoords);
+              console.log('  - Is User Location Fallback:', isUserLocationFallback);
+              console.log('  - Full Address Info:', fullAddressInfo);
+              
+              // Set confidence based on whether we found the actual location or fell back to user location
+              const confidence: 'high' | 'medium' | 'low' = isUserLocationFallback ? 'medium' : 'high';
+              const addressPrefix = isUserLocationFallback ? 
+                `📍 Near user location` : 
+                `📍 ${fullAddressInfo?.formatted_address || extractedLocation}`;
+              
+              fallbackLocation = {
+                address: addressPrefix,
+                coordinates: geocodedCoords,
+                confidence: confidence,
+                source: isUserLocationFallback ? 'fallback_estimated_near_user' : 'fallback_geocoded'
+              };
+              needsConfirmation = false;
+              
+            } else {
+              throw new Error('Geocoding returned null coordinates');
+            }
+          } catch (geocodeError) {
+            console.log('❌ ALL LOCATION METHODS FAILED:', geocodeError);
+            console.log('  - Using user location as last resort');
+            
+            // Final fallback to user location with clear labeling
+            const userCoords = locationContext.lastKnownLocation || 
+                             locationContext.routeStartLocation || 
+                             locationContext.routeDestinationLocation;
+            
+            console.log('📍 FINAL FALLBACK TO USER LOCATION:');
+            console.log('  - User Coordinates:', userCoords);
+            console.log('  - Intended Location:', extractedLocation);
+            
+            fallbackLocation = {
+              address: `📍 ${extractedLocation} (location estimate - please verify)`,
+              coordinates: {
+                lat: userCoords.lat,
+                lng: userCoords.lng
+              },
+              confidence: 'low' as const,
+              source: 'user_location_fallback' as const
+            };
+            needsConfirmation = true; // Ask for confirmation since this is just user location
+          }
         }
       } else if (locationContext?.lastKnownLocation) {
         // No specific location mentioned, use user's location directly
@@ -438,6 +476,35 @@ export class AIService {
       return null;
     }
 
+  }
+
+  async searchPlaceWithGooglePlaces(query: string, userLocation: {lat: number, lng: number}): Promise<any | null> {
+    try {
+      console.log('🔍 GOOGLE PLACES TEXT SEARCH:');
+      console.log('  - Query:', query);
+      console.log('  - User Location:', userLocation);
+      
+      // Call our edge function to do the Google Places search
+      const { data, error } = await supabase.functions.invoke('analyze-hazard', {
+        body: { 
+          userInput: `Search place: ${query}`,
+          locationContext: { lastKnownLocation: userLocation },
+          placesSearchOnly: true
+        }
+      });
+
+      if (error || !data?.place) {
+        console.log('Edge function Places search failed');
+        return null;
+      }
+
+      console.log('✅ GOOGLE PLACES RESULT:', data.place);
+      return data.place;
+      
+    } catch (error) {
+      console.error('Google Places search error:', error);
+      return null;
+    }
   }
 
   async geocodeLocation(address: string): Promise<{lat: number, lng: number} | null> {
