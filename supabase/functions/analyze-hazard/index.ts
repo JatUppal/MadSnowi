@@ -377,15 +377,24 @@ Please analyze this hazard report using all the context provided above and make 
       
       // Simple but effective fallback analysis
       analysis = createSimpleFallback(userInput, locationContext);
-    }
-
-    // Enhanced location processing with Google Places API if AI succeeded
-    if (analysis.location && analysis.location.confidence !== 'high') {
-      // Try to enhance location with Google Places Text Search
+      
+      // Try to enhance location with Google Places even in fallback mode
       const enhancedLocation = await tryEnhanceWithPlaces(userInput, locationContext);
       if (enhancedLocation) {
         analysis.location = enhancedLocation;
         analysis.needsLocationConfirmation = false;
+      }
+    }
+
+    // Enhanced location processing with Google Places API if AI succeeded
+    if (analysis.location && analysis.location.confidence !== 'high') {
+      // Try to enhance location with Google Places Text Search if not already done
+      if (analysis.location.source !== 'places_api') {
+        const enhancedLocation = await tryEnhanceWithPlaces(userInput, locationContext);
+        if (enhancedLocation) {
+          analysis.location = enhancedLocation;
+          analysis.needsLocationConfirmation = false;
+        }
       }
     }
 
@@ -480,9 +489,9 @@ async function tryEnhanceWithPlaces(userInput: string, locationContext: any) {
     const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
     if (!googleMapsApiKey) return null;
 
-    // Extract business/place names and street names from input
-    const businessMatch = userInput.match(/\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|7-eleven|shell|chevron)\b/gi);
-    const streetGuess = userInput.match(/\b(\w+\s+(road|rd|avenue|ave|parkway|blvd|boulevard|street|st|lane|ln))\b/gi)?.[0] || '';
+    // Extract business/place names and street names from input - enhanced patterns
+    const businessMatch = userInput.match(/\b(walgreens?|cvs|safeway|target|walmart|starbucks|mcdonalds?|7-eleven|shell|chevron|gas\s*station|grocery\s*store|pharmacy|bank|atm|home\s*depot|lowes?|best\s*buy|costco|sams?\s*club|whole\s*foods|trader\s*joes?|chipotle|subway|taco\s*bell|burger\s*king|kfc|pizza\s*hut|dominos?|papa\s*johns?|dennys?|ihop|applebees?|olive\s*garden|red\s*lobster|chilis?|outback|panda\s*express|in-n-out|five\s*guys|jack\s*in\s*the\s*box|wendys?|arbys?|sonic|dairy\s*queen|baskin\s*robbins|dunkin\s*donuts?|krispy\s*kreme|tim\s*hortons?|panera\s*bread?|einstein\s*bros?|jamba\s*juice|smoothie\s*king|orange\s*julius|auntie\s*annes?|cinnabon|pretzelmaker|hot\s*dog\s*on\s*a\s*stick|nathans?\s*famous|wienerschnitzel|del\s*taco|el\s*pollo\s*loco|yoshinoya|pei\s*wei|pick\s*up\s*stix|pf\s*changs?|benihana|cheesecake\s*factory|california\s*pizza\s*kitchen|bjs?\s*restaurant|cracker\s*barrel|golden\s*corral|hometown\s*buffet|ryans?\s*steakhouse|sizzler|black\s*angus|claim\s*jumper|marie\s*callenders?|mimi\s*cafe|coco\s*s|nordstrom|macys?|jc\s*penney|kohls?|sears|bloomingdales?|neiman\s*marcus|saks\s*fifth\s*avenue|barneys?\s*new\s*york|century\s*21|tj\s*maxx|marshalls?|ross\s*dress\s*for\s*less|burlington\s*coat\s*factory|old\s*navy|gap|banana\s*republic|american\s*eagle|abercrombie|hollister|aeropostale|forever\s*21|h&m|zara|uniqlo|urban\s*outfitters|anthropologie|free\s*people|victoria\s*secret|bath\s*and\s*body\s*works|bed\s*bath\s*and\s*beyond|williams\s*sonoma|pottery\s*barn|crate\s*and\s*barrel|pier\s*1|ikea|ashley\s*furniture|rooms\s*to\s*go|la-z-boy|ethan\s*allen|restoration\s*hardware|west\s*elm|cb2|design\s*within\s*reach|room\s*and\s*board|mitchell\s*gold|bob\s*williams|dwr|world\s*market|cost\s*plus|pier\s*1\s*imports|tuesday\s*morning|big\s*lots|dollar\s*tree|family\s*dollar|dollar\s*general)\b/gi);
+    const streetGuess = userInput.match(/\b(\w+\s+(road|rd|avenue|ave|parkway|blvd|boulevard|street|st|lane|ln|way|drive|dr|court|ct|circle|cir|place|pl))\b/gi)?.[0] || '';
     
     if (!businessMatch) return null;
 
