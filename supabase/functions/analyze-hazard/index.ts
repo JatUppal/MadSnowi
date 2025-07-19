@@ -89,13 +89,22 @@ LOCATION CONTEXT:`;
           if (geocodeResponse.ok) {
             const geocodeData = await geocodeResponse.json();
             
+            console.log(`📍 GEOCODING API RESPONSE:`);
+            console.log(`  - Status: ${geocodeData.status}`);
+            console.log(`  - Results count: ${geocodeData.results?.length || 0}`);
+            console.log(`  - Full response:`, JSON.stringify(geocodeData, null, 2));
+            
             if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
               userLocationAddress = geocodeData.results[0].formatted_address;
               console.log(`✅ REVERSE GEOCODING SUCCESS:`);
               console.log(`  - New address: ${userLocationAddress}`);
               console.log(`  - Coordinates: ${location.lat}, ${location.lng}`);
+              console.log(`  - Address components:`, JSON.stringify(geocodeData.results[0].address_components, null, 2));
             } else {
               console.log(`⚠️ Geocoding failed with status: ${geocodeData.status}`);
+              if (geocodeData.error_message) {
+                console.log(`  - Error message: ${geocodeData.error_message}`);
+              }
             }
           } else {
             console.log(`⚠️ Geocoding API request failed: ${geocodeResponse.status}`);
