@@ -17,11 +17,15 @@ interface HazardAnalysis {
       lng: number;
     };
     confidence: 'high' | 'medium' | 'low';
-    source: 'gpt_guess' | 'user_location' | 'places_api' | 'exact_match';
-    reasoning?: string;
+    validation?: {
+      source: string;
+      matchScore: number;
+      disambiguation: string;
+    };
   } | null;
   severity: 'low' | 'medium' | 'high';
-  needsLocationConfirmation: boolean;
+  timeRelevance?: string;
+  needsConfirmation: boolean;
   aiReasoning?: string;
 }
 
@@ -87,8 +91,34 @@ serve(async (req) => {
       nearbyPlaces = await getNearbyPlaces(locationContext.lastKnownLocation.lat, locationContext.lastKnownLocation.lng);
     }
 
-    // Build comprehensive context for AI analysis
-    let systemPrompt = `You are an expert AI assistant analyzing road hazard reports. You will receive ALL available user information and must use this context to make the best possible guess about hazard location.
+    // Build comprehensive context for AI analysis  
+    let systemPrompt = `You are an elite AI assistant specializing in real-time road hazard classification and hyper-accurate geolocation inference. Your task is to extract, clean, and analyze user-submitted hazard reports using natural language, map context, and POI data to infer precise locations and severity within a ≤0.5 mile error margin.
+
+=== SYSTEM GOALS ===
+1. Show ONLY hazard reports created in the past 24 hours.
+2. Clean and correct grammar, spelling, and vague phrases in user input.
+3. Generate a 2–4 word, specific, title (no vague terms).
+4. Infer the most accurate hazard location using:
+   • 📍User's last known coordinates
+   • Google Places API & OpenStreetMap
+   • Levenshtein-corrected POI names (e.g. "wallgreens" → Walgreens)
+   • Relative phrases like "ahead", "near", etc.
+5. Use indexing and backend filtering (\`.gte('created_at', timestamp)\`) to optimize performance.
+6. Clean old hazard reports (>24h) with automated backend cleanup.
+7. Attach metadata: confidence level, disambiguation reasoning, and source trail.
+8. Reject implausible locations (e.g., "ice" on 90°F days or hillsides).
+9. Provide concise JSON output with standardized format.
+
+=== LOCATION INFERENCE PRIORITY ===
+1. **Layer 1:** POIs or landmarks <0.5 mi from user (HIGH confidence)
+2. **Layer 2:** 0.5–2 mi if no nearby match (MEDIUM confidence)
+3. **Layer 3:** 2–5 mi only as emergency fallback (LOW confidence)
+4. **Fallback:** Use last known location if all else fails
+
+=== SEVERITY ===
+• high: accidents, ice, fallen trees, blockages
+• medium: flooding, construction, moderate debris
+• low: potholes, light debris, signs down
 
 === USER INFORMATION ANALYSIS ===
 
@@ -271,21 +301,61 @@ Only set needsLocationConfirmation=true if:
 - Cannot make any reasonable location guess
 - If user has NO data at all, MUST prompt for location
 
+=== JSON OUTPUT FORMAT ===
+```json
+{
+  "title": "Tree Across Lane",
+  "hazardType": "obstruction",
+  "description": "Large tree blocking northbound lane near Safeway entrance.",
+  "location": {
+    "address": "📍 3540 Bollinger Canyon Rd, San Ramon, CA 94583",
+    "coordinates": { "lat": 37.7653, "lng": -121.9002 },
+    "confidence": "high",
+    "validation": {
+      "source": "places_api+user_location",
+      "matchScore": 0.95,
+      "disambiguation": "Safeway match <0.3 mi from user location."
+    }
+  },
+  "severity": "high",
+  "timeRelevance": "last_15min",
+  "needsConfirmation": false,
+  "aiReasoning": "Fallen tree matched to nearest Safeway with validated POI. Location <0.5 mi from user and terrain is plausible for obstruction."
+}
+```
+
+=== BANNED TITLE PHRASES ===
+"Here", "There", "Nearby", "by the user", "Location", vague/relative phrases.
+
+=== EXAMPLES ===
+User: "ice patch near shell"
+→ Title: "Ice Hazard"
+→ Address: closest Shell to user (<0.5 mi), if terrain/temp valid
+
+User: "tree fell down by wallgreens"
+→ Title: "Fallen Tree"
+→ Address: "📍 2280 San Ramon Valley Blvd, San Ramon, CA 94583"
+→ Reasoning: "wallgreens" matched to closest Walgreens using Levenshtein and location proximity
+
 RESPONSE FORMAT (JSON only):
 {
-  "title": "2-4 word hazard title with correct spelling",
-  "hazardType": "Brief description of hazard type",
-  "description": "Corrected and cleaned user input with proper grammar and spelling",
+  "title": "Tree Across Lane",
+  "hazardType": "obstruction",
+  "description": "Large tree blocking northbound lane near Safeway entrance.",
   "location": {
-    "address": "📍 readable street address", 
-    "coordinates": {"lat": number, "lng": number} or null,
-    "confidence": "high|medium|low",
-    "source": "gpt_guess|user_location|places_api|exact_match",
-    "reasoning": "explanation of how you determined this location"
-  } or null,
-  "severity": "low|medium|high",
-  "needsLocationConfirmation": boolean,
-  "aiReasoning": "Brief explanation of your decision process"
+    "address": "📍 3540 Bollinger Canyon Rd, San Ramon, CA 94583",
+    "coordinates": { "lat": 37.7653, "lng": -121.9002 },
+    "confidence": "high",
+    "validation": {
+      "source": "places_api+user_location",
+      "matchScore": 0.95,
+      "disambiguation": "Safeway match <0.3 mi from user location."
+    }
+  },
+  "severity": "high",
+  "timeRelevance": "last_15min",
+  "needsConfirmation": false,
+  "aiReasoning": "Fallen tree matched to nearest Safeway with validated POI. Location <0.5 mi from user and terrain is plausible for obstruction."
 }
 
 Do NOT include vague location descriptors like "There", "Here", or "Nearby" in the title or address.
