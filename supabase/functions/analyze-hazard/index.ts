@@ -302,7 +302,6 @@ Only set needsLocationConfirmation=true if:
 - If user has NO data at all, MUST prompt for location
 
 === JSON OUTPUT FORMAT ===
-```json
 {
   "title": "Tree Across Lane",
   "hazardType": "obstruction",
@@ -322,7 +321,6 @@ Only set needsLocationConfirmation=true if:
   "needsConfirmation": false,
   "aiReasoning": "Fallen tree matched to nearest Safeway with validated POI. Location <0.5 mi from user and terrain is plausible for obstruction."
 }
-```
 
 === BANNED TITLE PHRASES ===
 "Here", "There", "Nearby", "by the user", "Location", vague/relative phrases.
