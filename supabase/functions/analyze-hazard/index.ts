@@ -116,7 +116,7 @@ async function searchPlacesWithExpansion(
           ? `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${pageToken}&key=${googleMapsApiKey}`
           : url;
         
-        console.log(`  📄 Fetching page ${pageCount + 1}...`);
+        console.log(`  📄 Fetching page ${pageCount + 1}: ${searchUrl.replace(googleMapsApiKey, 'API_KEY_HIDDEN')}`);
         
         if (pageToken) {
           // Google requires a delay before using page tokens
@@ -126,8 +126,16 @@ async function searchPlacesWithExpansion(
         const response = await fetch(searchUrl);
         const data: PlacesResponse = await response.json();
 
+        console.log(`  📡 API Response status: ${data.status}`);
+        if (data.results) {
+          console.log(`  📝 Raw results: ${JSON.stringify(data.results.slice(0, 3), null, 2)}`);
+        }
+
         if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
           console.log(`  ⚠️ API Error: ${data.status}`);
+          if (data.status === 'REQUEST_DENIED') {
+            console.log(`  ❌ REQUEST_DENIED - Check API key and billing`);
+          }
           break;
         }
 
