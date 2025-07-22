@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -85,7 +86,8 @@ async function searchPlacesWithExpansion(
   userLat: number, 
   userLng: number, 
   query: string, 
-  googleMapsApiKey: string
+  googleMapsApiKey: string,
+  supabase: any
 ): Promise<{ place: PlaceResult; distance: number; similarity: number; confidence: string } | null> {
   
   const radiusLayers = [1600, 4800, 8000, 16000]; // 1mi, 3mi, 5mi, 10mi in meters
@@ -151,7 +153,70 @@ async function searchPlacesWithExpansion(
 
       console.log(`  📊 Total results for ${radius}m radius: ${allResults.length}`);
 
-      // Analyze results for this radius
+      // Store all results in database for debugging
+      const confidence = confidenceThresholds[radius as keyof typeof confidenceThresholds];
+      
+      for (const place of allResults) {
+        const distance = calculateDistance(
+          userLat, userLng,
+          place.geometry.location.lat, place.geometry.location.lng
+        );
+
+        // Skip places outside the current radius
+        if (distance > radius * 0.000621371) continue;
+
+        // Calculate similarity score
+        const queryWords = query.toLowerCase().split(/\s+/);
+        const businessNames = queryWords.filter(word => 
+          word.length > 2 && 
+          !['near', 'by', 'at', 'on', 'the', 'and', 'or'].includes(word)
+        );
+
+        let maxSimilarity = 0;
+        for (const businessName of businessNames) {
+          const similarity = calculateSimilarity(businessName, place.name);
+          maxSimilarity = Math.max(maxSimilarity, similarity);
+        }
+
+        // Also check against place types for generic terms
+        if (maxSimilarity < 0.6) {
+          for (const type of place.types) {
+            for (const businessName of businessNames) {
+              const typeSimilarity = calculateSimilarity(businessName, type.replace(/_/g, ' '));
+              maxSimilarity = Math.max(maxSimilarity, typeSimilarity);
+            }
+          }
+        }
+
+        // Store in database
+        try {
+          const { error } = await supabase
+            .from('places_search_logs')
+            .insert({
+              search_query: query,
+              user_lat: userLat,
+              user_lng: userLng,
+              radius_meters: radius,
+              place_name: place.name,
+              place_address: place.formatted_address,
+              place_lat: place.geometry.location.lat,
+              place_lng: place.geometry.location.lng,
+              place_types: place.types,
+              distance_miles: distance,
+              similarity_score: maxSimilarity,
+              confidence_level: confidence,
+              was_selected: false // Will update this later if selected
+            });
+
+          if (error) {
+            console.log(`⚠️ Failed to store place data: ${error.message}`);
+          }
+        } catch (dbError) {
+          console.log(`⚠️ Database error: ${dbError.message}`);
+        }
+      }
+
+      // Analyze results for this radius to find best match
       let bestMatch: { place: PlaceResult; distance: number; similarity: number } | null = null;
       
       for (const place of allResults) {
@@ -160,7 +225,7 @@ async function searchPlacesWithExpansion(
           place.geometry.location.lat, place.geometry.location.lng
         );
 
-        // Skip places outside the current radius (in case API returned extra results)
+        // Skip places outside the current radius
         if (distance > radius * 0.000621371) continue;
 
         // Extract business names from the query to match against
@@ -195,9 +260,26 @@ async function searchPlacesWithExpansion(
         }
       }
 
-      // If we found a confident match in this radius, return it
+      // If we found a confident match in this radius, mark it as selected and return it
       if (bestMatch && bestMatch.similarity >= 0.85) {
         const confidence = confidenceThresholds[radius as keyof typeof confidenceThresholds];
+        
+        // Update the selected place in database
+        try {
+          const { error } = await supabase
+            .from('places_search_logs')
+            .update({ was_selected: true })
+            .eq('place_name', bestMatch.place.name)
+            .eq('search_query', query)
+            .eq('radius_meters', radius);
+
+          if (error) {
+            console.log(`⚠️ Failed to update selected place: ${error.message}`);
+          }
+        } catch (dbError) {
+          console.log(`⚠️ Database error updating selection: ${dbError.message}`);
+        }
+
         console.log(`✅ Found confident match in ${radius}m radius: ${bestMatch.place.name} (similarity: ${bestMatch.similarity.toFixed(3)}, distance: ${bestMatch.distance.toFixed(2)}mi)`);
         return { ...bestMatch, confidence };
       }
@@ -277,6 +359,11 @@ serve(async (req) => {
     const { userInput, locationContext } = await req.json();
     console.log('🚀 Starting hazard analysis for:', userInput);
     console.log('📍 Location context:', JSON.stringify(locationContext, null, 2));
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
     console.log('🔑 Google Maps API Key check:', {
@@ -362,7 +449,7 @@ serve(async (req) => {
     console.log(`🏷️ Classified as: ${title} (${hazardType}, ${severity} severity)`);
 
     // Search for the most likely location using Google Places API
-    const searchResult = await searchPlacesWithExpansion(userLat, userLng, userInput, googleMapsApiKey);
+    const searchResult = await searchPlacesWithExpansion(userLat, userLng, userInput, googleMapsApiKey, supabase);
 
     let analysis: HazardAnalysis;
 

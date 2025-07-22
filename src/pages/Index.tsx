@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bug } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import RouteSearchForm from '@/components/RouteSearchForm';
 import RouteMap from '@/components/RouteMap';
 import RouteResults from '@/components/RouteResults';
@@ -99,6 +102,16 @@ const Index = () => {
   };
   return <div className="min-h-screen bg-sky-100">
       <div className="container mx-auto px-4 py-8 bg-sky-100">
+        {/* Debug Button */}
+        <div className="mb-4 flex justify-end">
+          <Link to="/debug">
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Bug className="w-4 h-4" />
+              AI Debug
+            </Button>
+          </Link>
+        </div>
+
         {/* Upside-down T Layout: Two columns at top, full-width section below */}
         
         {/* Top Section: Left + Right Columns */}

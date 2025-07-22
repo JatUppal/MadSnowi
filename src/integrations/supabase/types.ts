@@ -56,6 +56,63 @@ export type Database = {
         }
         Relationships: []
       }
+      places_search_logs: {
+        Row: {
+          confidence_level: string
+          created_at: string
+          distance_miles: number
+          id: string
+          place_address: string
+          place_lat: number
+          place_lng: number
+          place_name: string
+          place_types: string[]
+          radius_meters: number
+          radius_miles: number | null
+          search_query: string
+          similarity_score: number
+          user_lat: number
+          user_lng: number
+          was_selected: boolean
+        }
+        Insert: {
+          confidence_level: string
+          created_at?: string
+          distance_miles: number
+          id?: string
+          place_address: string
+          place_lat: number
+          place_lng: number
+          place_name: string
+          place_types?: string[]
+          radius_meters: number
+          radius_miles?: number | null
+          search_query: string
+          similarity_score: number
+          user_lat: number
+          user_lng: number
+          was_selected?: boolean
+        }
+        Update: {
+          confidence_level?: string
+          created_at?: string
+          distance_miles?: number
+          id?: string
+          place_address?: string
+          place_lat?: number
+          place_lng?: number
+          place_name?: string
+          place_types?: string[]
+          radius_meters?: number
+          radius_miles?: number | null
+          search_query?: string
+          similarity_score?: number
+          user_lat?: number
+          user_lng?: number
+          was_selected?: boolean
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
