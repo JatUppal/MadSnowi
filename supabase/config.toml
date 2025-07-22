@@ -1,5 +1,8 @@
 project_id = "fbpbnpleczgondniojmy"
 
+[functions.analyze-hazard]
+verify_jwt = false
+
 [functions.get-weather]
 verify_jwt = false
 
