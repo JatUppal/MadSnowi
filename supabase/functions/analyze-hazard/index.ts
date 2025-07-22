@@ -276,10 +276,17 @@ serve(async (req) => {
   try {
     const { userInput, locationContext } = await req.json();
     console.log('🚀 Starting hazard analysis for:', userInput);
-    console.log('📍 Location context:', locationContext);
+    console.log('📍 Location context:', JSON.stringify(locationContext, null, 2));
 
     const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    console.log('🔑 Google Maps API Key check:', {
+      hasKey: !!googleMapsApiKey,
+      keyLength: googleMapsApiKey?.length || 0,
+      keyPrefix: googleMapsApiKey?.substring(0, 10) || 'none'
+    });
+    
     if (!googleMapsApiKey) {
+      console.error('❌ Google Maps API key not found');
       throw new Error('Google Maps API key not configured');
     }
 
