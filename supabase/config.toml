@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.analyze-route-safety]
 verify_jwt = false
+
+[functions.cleanup-old-hazards]
+verify_jwt = false

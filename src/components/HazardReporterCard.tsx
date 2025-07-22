@@ -21,13 +21,19 @@ const HazardReporterCard = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedHazard, setSelectedHazard] = useState<HazardReport | null>(null);
 
-  // Load initial hazards on mount
+  // Load hazards from the past 24 hours only (performance optimization)
   useEffect(() => {
     const loadHazards = async () => {
       try {
+        // Backend filtering: Only fetch hazard reports from the last 24 hours
+        // This reduces API payload size and improves performance with indexed queries
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        
+        console.log('📊 Loading hazards from the past 24 hours...');
         const { data, error } = await supabase
           .from('hazard_reports')
           .select('*')
+          .gte('created_at', twentyFourHoursAgo) // Only show reports from last 24 hours
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -36,6 +42,7 @@ const HazardReporterCard = () => {
           return;
         }
 
+        console.log(`✅ Loaded ${data?.length || 0} recent hazards (24h filter applied)`);
         setHazards((data || []) as HazardReport[]);
       } catch (error) {
         console.log('Could not load hazards:', error);
@@ -140,6 +147,9 @@ const HazardReporterCard = () => {
         <CardTitle className="text-lg font-semibold text-foreground flex items-center gap-2">
           🚧 Live Hazard Reports
         </CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Showing hazards reported in the last 24 hours
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* AI hazard input */}
