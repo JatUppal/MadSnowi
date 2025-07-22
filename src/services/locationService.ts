@@ -145,7 +145,40 @@ export class LocationService {
   }
 
   private static async reverseGeocode(lat: number, lng: number): Promise<string | null> {
-    // Mock reverse geocoding - in a real implementation, use Google Maps API
-    return `Near ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    try {
+      console.log('🔍 REVERSE GEOCODING USER LOCATION...');
+      
+      // Call the edge function directly for reverse geocoding
+      const supabase = (await import('../integrations/supabase/client')).supabase;
+      const { data, error } = await supabase.functions.invoke('analyze-hazard', {
+        body: {
+          userInput: 'reverse-geocode-only',
+          locationContext: {
+            lastKnownLocation: {
+              lat,
+              lng,
+              address: `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+              timestamp: Date.now()
+            }
+          }
+        }
+      });
+
+      if (error) {
+        console.error('⚠️ Edge function error:', error);
+        return `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+
+      if (data && data.reverseGeocodeResult && !data.reverseGeocodeResult.includes('Location:')) {
+        console.log('✅ Got reverse geocoded address:', data.reverseGeocodeResult);
+        return data.reverseGeocodeResult;
+      }
+      
+      console.log('⚠️ Reverse geocoding failed, using coordinates');
+      return `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    } catch (error) {
+      console.error('Error in reverse geocoding:', error);
+      return `Location: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    }
   }
 }
