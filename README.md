@@ -1,119 +1,164 @@
-# Welcome to your Lovable project
+# 🛣️ Smart Road Safety Navigator
 
-## Project info
+An intelligent road safety application that combines AI-powered hazard analysis, real-time weather monitoring, and route optimization to help drivers navigate safely.
 
-**URL**: https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9
+## 🚀 Key Features
 
-## Environment Setup
+### 🤖 AI-Powered Hazard Reporting
+- **Smart Hazard Analysis**: Natural language processing to understand and categorize road hazards
+- **Location Intelligence**: Automatic location detection and reverse geocoding for precise hazard mapping
+- **Severity Assessment**: AI-driven severity classification (low, medium, high, critical)
+- **Real-time Validation**: Cross-reference with multiple data sources for accuracy
 
-This project requires the following environment variables to be configured:
+### 🗺️ Advanced Mapping & Navigation
+- **Interactive Maps**: Google Maps integration with custom markers and overlays
+- **Route Planning**: Intelligent route calculation with multiple options
+- **Safety-Focused Routing**: Route recommendations based on current hazards and conditions
+- **Real-time Traffic**: Integration with live traffic data
 
-### Google Maps API Key
-The application uses Google Maps for route display and navigation. You need to:
+### 🌤️ Weather Intelligence
+- **Live Weather Data**: Real-time weather conditions using OpenWeather API
+- **Weather-Aware Routing**: Route adjustments based on weather conditions
+- **Precipitation Tracking**: Snow depth and precipitation monitoring
+- **Temperature & Wind**: Comprehensive weather metrics for safety planning
 
-1. Get a Google Maps API key from the [Google Cloud Console](https://console.cloud.google.com/)
-2. Enable the following APIs:
-   - Maps JavaScript API
-   - Directions API
-   - Places API
-3. Create a `.env` file in the project root with:
-   ```
-   VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-   ```
+### 📍 Location Services
+- **Precise Geolocation**: High-accuracy GPS positioning
+- **Address Autocomplete**: Google Places API integration for smart address suggestions
+- **Reverse Geocoding**: Convert coordinates to human-readable addresses
+- **Location Context**: Smart location memory and route history
 
-### OpenWeather API Key (for Supabase Backend)
-For weather data functionality, you'll need:
+### 🔧 Backend Infrastructure
+- **Edge Functions**: Serverless functions for AI processing and API integration
+- **Real-time Database**: Supabase for hazard storage and retrieval
+- **Data Analytics**: Route safety analysis and hazard trend monitoring
+- **API Orchestration**: Seamless integration of multiple external services
 
-1. Get an OpenWeather API key from [OpenWeather](https://openweathermap.org/api)
-2. Add to your `.env` file:
-   ```
-   OPENWEATHER_API_KEY=your_openweather_api_key_here
-   ```
-3. Set this as an environment variable in your Supabase project settings
+## 🛠️ Technology Stack
 
-### Supabase Configuration (Optional)
-For backend functionality, you'll also need:
-```
-VITE_SUPABASE_URL=your_supabase_url_here
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
+### Frontend
+- **React 18**: Modern component-based UI framework
+- **TypeScript**: Type-safe development
+- **Vite**: Fast build tool and development server
+- **Tailwind CSS**: Utility-first CSS framework
+- **shadcn/ui**: Modern component library
+- **React Router**: Client-side routing
+- **TanStack Query**: Server state management
 
-### Fallback Mode
-The app includes fallback functionality that works without the backend APIs. If Supabase functions fail, the app will:
-- Generate realistic mock weather data for Madison, WI
-- Provide simulated route analysis
-- Continue to function with Google Maps integration
+### Backend & Infrastructure
+- **Supabase**: Backend-as-a-Service platform
+  - Edge Functions (Deno runtime)
+  - PostgreSQL database
+  - Real-time subscriptions
+  - Authentication ready
+- **Serverless Architecture**: Auto-scaling edge functions
 
-## How can I edit this code?
+### APIs & Services
+- **Google Maps Platform**:
+  - Maps JavaScript API
+  - Directions API
+  - Places API
+  - Geocoding API
+- **OpenWeather API**: Weather data and forecasting
+- **OpenAI API**: AI-powered text analysis and hazard classification
 
-There are several ways of editing your application.
+### Development Tools
+- **ESLint**: Code linting and quality checks
+- **Bun**: Fast package manager
+- **Git**: Version control
+- **GitHub Integration**: Bidirectional sync with Lovable
 
-**Use Lovable**
+## 🔧 Environment Setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9) and start prompting.
+### Required API Keys
 
-Changes made via Lovable will be committed automatically to this repo.
+1. **Google Maps API Key**
+   - Enable: Maps JavaScript API, Directions API, Places API, Geocoding API
+   - Get from: [Google Cloud Console](https://console.cloud.google.com/)
 
-**Use your preferred IDE**
+2. **OpenWeather API Key**
+   - Get from: [OpenWeather](https://openweathermap.org/api)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. **OpenAI API Key** (for AI features)
+   - Get from: [OpenAI Platform](https://platform.openai.com/)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Supabase Configuration
+All API keys are securely stored in Supabase secrets and accessed via edge functions. The application uses:
+- `GOOGLE_MAPS_API_KEY`
+- `OPENWEATHER_API_KEY` 
+- `OPENAI_API_KEY`
 
-Follow these steps:
+## 🚀 Getting Started
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+### Using Lovable (Recommended)
+1. Visit the [Lovable Project](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9)
+2. Start editing with natural language prompts
+3. Changes automatically sync to GitHub
+
+### Local Development
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Install dependencies
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Set up environment variables (see Environment Setup above)
-
-# Step 5: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### GitHub Codespaces
+1. Click "Code" → "Codespaces" → "New codespace"
+2. Edit directly in the browser
+3. Commit and push changes
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🌐 Deployment
 
-**Use GitHub Codespaces**
+Deploy instantly using Lovable:
+1. Open your [Lovable project](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9)
+2. Click **Share** → **Publish**
+3. Optional: Connect a custom domain in Project Settings
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📱 Application Architecture
 
-## What technologies are used for this project?
+```
+┌─────────────────────┐    ┌──────────────────────┐    ┌─────────────────────┐
+│   React Frontend    │    │  Supabase Backend    │    │   External APIs     │
+│                     │    │                      │    │                     │
+│ • Route Planning    │◄──►│ • Edge Functions     │◄──►│ • Google Maps       │
+│ • Hazard Reporting  │    │ • PostgreSQL DB      │    │ • OpenWeather       │
+│ • Weather Display   │    │ • Real-time Sync     │    │ • OpenAI            │
+│ • Interactive Maps  │    │ • Authentication     │    │ • 511 APIs          │
+└─────────────────────┘    └──────────────────────┘    └─────────────────────┘
+```
 
-This project is built with:
+## 🔒 Security & Privacy
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-- @react-google-maps/api
-- Google Maps JavaScript API
-- Supabase (Edge Functions)
-- OpenWeather API
+- **API Key Protection**: All sensitive keys stored in Supabase secrets
+- **Client-side Safety**: No sensitive data exposed to frontend
+- **Location Privacy**: User location data handled securely
+- **CORS Protection**: Proper cross-origin request handling
 
-## How can I deploy this project?
+## 📊 Data Flow
 
-Simply open [Lovable](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9) and click on Share -> Publish.
+1. **User Input**: Natural language hazard description
+2. **AI Processing**: OpenAI analyzes and categorizes hazard
+3. **Location Resolution**: Google Maps geocoding and place lookup
+4. **Database Storage**: Hazard stored in Supabase with metadata
+5. **Real-time Updates**: Live hazard display on maps
+6. **Route Integration**: Hazards considered in route planning
 
-## Can I connect a custom domain to my Lovable project?
+## 🤝 Contributing
 
-Yes, you can!
+This project uses Lovable's bidirectional GitHub sync:
+- **Push to GitHub**: Changes automatically appear in Lovable
+- **Edit in Lovable**: Changes automatically push to GitHub
+- **No manual sync required**: Real-time bidirectional updates
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Built with ❤️ using [Lovable](https://lovable.dev)
+
+---
+
+**Project URL**: https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9
