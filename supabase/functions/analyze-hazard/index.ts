@@ -384,10 +384,15 @@ serve(async (req) => {
       try {
         console.log('🔍 REVERSE GEOCODING FOR USER LOCATION STORAGE...');
         const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.lat},${location.lng}&key=${googleMapsApiKey}`;
+        console.log('🌐 Geocoding URL:', geocodeUrl.replace(googleMapsApiKey, '[API_KEY]'));
+        
         const geocodeResponse = await fetch(geocodeUrl);
+        console.log('📡 Geocoding API response status:', geocodeResponse.status);
         
         if (geocodeResponse.ok) {
           const geocodeData = await geocodeResponse.json();
+          console.log('📊 Geocoding API response:', JSON.stringify(geocodeData, null, 2));
+          
           if (geocodeData.status === 'OK' && geocodeData.results.length > 0) {
             const reverseGeocodeResult = geocodeData.results[0].formatted_address;
             console.log('✅ Reverse geocoding successful:', reverseGeocodeResult);
@@ -395,7 +400,11 @@ serve(async (req) => {
               JSON.stringify({ reverseGeocodeResult }),
               { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
+          } else {
+            console.log('⚠️ Geocoding API returned no results or error:', geocodeData.status);
           }
+        } else {
+          console.log('❌ Geocoding API HTTP error:', geocodeResponse.status, geocodeResponse.statusText);
         }
       } catch (error) {
         console.log('⚠️ Reverse geocoding failed:', error);
