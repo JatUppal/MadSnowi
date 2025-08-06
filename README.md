@@ -90,11 +90,6 @@ All API keys are securely stored in Supabase secrets and accessed via edge funct
 
 ## 🚀 Getting Started
 
-### Using Lovable (Recommended)
-1. Visit the [Lovable Project](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9)
-2. Start editing with natural language prompts
-3. Changes automatically sync to GitHub
-
 ### Local Development
 ```bash
 # Clone the repository
@@ -155,10 +150,5 @@ This project uses Lovable's bidirectional GitHub sync:
 - **Edit in Lovable**: Changes automatically push to GitHub
 - **No manual sync required**: Real-time bidirectional updates
 
-## 📄 License
-
-Built with ❤️ using [Lovable](https://lovable.dev)
-
----
 
 **Project URL**: https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9
