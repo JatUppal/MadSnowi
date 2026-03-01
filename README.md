@@ -1,6 +1,6 @@
 # 🛣️ Smart Road Safety Navigator
 
-An intelligent road safety application that combines AI-powered hazard analysis, real-time weather monitoring, and route optimization to help drivers navigate safely.
+An intelligent road safety platform that combines AI-powered hazard analysis from NLP, real-time weather monitoring, and route optimization to help drivers navigate safely.
 
 ## 🚀 Key Features
 
@@ -137,11 +137,4 @@ npm run dev
 4. **Database Storage**: Hazard stored in Supabase with metadata
 5. **Real-time Updates**: Live hazard display on maps
 6. **Route Integration**: Hazards considered in route planning
-
-## 🤝 Contributing
-
-This project uses Lovable's bidirectional GitHub sync:
-- **Push to GitHub**: Changes automatically appear in Lovable
-- **Edit in Lovable**: Changes automatically push to GitHub
-- **No manual sync required**: Real-time bidirectional updates
 
