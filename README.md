@@ -107,12 +107,7 @@ npm run dev
 2. Edit directly in the browser
 3. Commit and push changes
 
-## 🌐 Deployment
 
-Deploy instantly using Lovable:
-1. Open your [Lovable project](https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9)
-2. Click **Share** → **Publish**
-3. Optional: Connect a custom domain in Project Settings
 
 ## 📱 Application Architecture
 
@@ -150,5 +145,3 @@ This project uses Lovable's bidirectional GitHub sync:
 - **Edit in Lovable**: Changes automatically push to GitHub
 - **No manual sync required**: Real-time bidirectional updates
 
-
-**Project URL**: https://lovable.dev/projects/8d665636-8133-41bf-ab45-d210df8993a9
